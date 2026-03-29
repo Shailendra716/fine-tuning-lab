@@ -1,0 +1,4044 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fine-Tuning Lab</title>
+<style>
+/* ===== RESET & BASE ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #f5f7f5;
+  color: #1a1a2e;
+  min-height: 100vh;
+}
+
+/* ===== COLORS ===== */
+:root {
+  --green: #25D366;
+  --green-dark: #1da851;
+  --green-light: #e8f8ee;
+  --green-pale: #f0faf3;
+  --white: #ffffff;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+  --radius: 12px;
+}
+
+/* ===== LAYOUT ===== */
+.app { display: flex; min-height: 100vh; }
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+  width: 260px;
+  background: var(--white);
+  border-right: 1px solid var(--gray-200);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 100;
+}
+.sidebar-logo {
+  padding: 24px 20px;
+  border-bottom: 1px solid var(--gray-200);
+}
+.sidebar-logo h1 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--green-dark);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sidebar-logo h1 span {
+  width: 32px;
+  height: 32px;
+  background: var(--green);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 16px;
+}
+.sidebar-nav {
+  flex: 1;
+  padding: 12px;
+  overflow-y: auto;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--gray-600);
+  transition: all 0.2s;
+  margin-bottom: 4px;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+}
+.nav-item:hover {
+  background: var(--green-pale);
+  color: var(--green-dark);
+}
+.nav-item.active {
+  background: var(--green-light);
+  color: var(--green-dark);
+  font-weight: 600;
+}
+.nav-item svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+.nav-badge {
+  margin-left: auto;
+  background: var(--gray-200);
+  color: var(--gray-500);
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+.nav-item.active .nav-badge {
+  background: var(--green);
+  color: white;
+}
+
+/* ===== MAIN CONTENT ===== */
+.main {
+  flex: 1;
+  margin-left: 260px;
+  padding: 32px;
+  max-width: 1200px;
+}
+.page { display: none; }
+.page.active { display: block; }
+
+/* ===== HEADER ===== */
+.page-header {
+  margin-bottom: 28px;
+}
+.page-header h2 {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--gray-800);
+  margin-bottom: 6px;
+}
+.page-header p {
+  font-size: 14px;
+  color: var(--gray-500);
+}
+
+/* ===== CARDS ===== */
+.card {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-sm);
+}
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.card-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--gray-800);
+}
+
+/* ===== BUTTONS ===== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+.btn-primary {
+  background: var(--green);
+  color: white;
+}
+.btn-primary:hover {
+  background: var(--green-dark);
+  box-shadow: 0 4px 12px rgba(37,211,102,0.3);
+}
+.btn-secondary {
+  background: var(--gray-100);
+  color: var(--gray-700);
+  border: 1px solid var(--gray-200);
+}
+.btn-secondary:hover {
+  background: var(--gray-200);
+}
+.btn-danger {
+  background: #fee2e2;
+  color: #dc2626;
+}
+.btn-danger:hover {
+  background: #fecaca;
+}
+.btn-sm {
+  padding: 6px 14px;
+  font-size: 13px;
+  border-radius: 8px;
+}
+.btn-icon {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid var(--gray-200);
+  background: var(--white);
+  color: var(--gray-500);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-icon:hover {
+  background: var(--gray-100);
+  color: var(--gray-700);
+}
+
+/* ===== FORM ELEMENTS ===== */
+.form-group {
+  margin-bottom: 16px;
+}
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-700);
+  margin-bottom: 6px;
+}
+.form-input, .form-select, .form-textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--gray-300);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--gray-800);
+  background: var(--white);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  outline: none;
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(37,211,102,0.15);
+}
+.form-textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+/* ===== DATASET BUILDER ===== */
+.dataset-controls {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.dataset-stats {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+.stat-card {
+  background: var(--green-pale);
+  border: 1px solid var(--green-light);
+  border-radius: 10px;
+  padding: 16px 24px;
+  flex: 1;
+  text-align: center;
+}
+.stat-card .stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--green-dark);
+}
+.stat-card .stat-label {
+  font-size: 12px;
+  color: var(--gray-500);
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ===== DATA PAIR ===== */
+.data-pair {
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 16px;
+  position: relative;
+  transition: border-color 0.2s;
+}
+.data-pair:hover {
+  border-color: var(--green);
+}
+.data-pair-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.data-pair-number {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--green-dark);
+  background: var(--green-light);
+  padding: 4px 12px;
+  border-radius: 6px;
+}
+.data-pair-actions {
+  display: flex;
+  gap: 6px;
+}
+.data-pair-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.data-pair-field label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray-600);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.data-pair-field label .role-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.role-dot.user { background: #3b82f6; }
+.role-dot.assistant { background: var(--green); }
+.data-pair-field textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 10px 14px;
+  border: 1px solid var(--gray-300);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--gray-800);
+  background: var(--white);
+  resize: vertical;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.data-pair-field textarea:focus {
+  outline: none;
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(37,211,102,0.15);
+}
+
+/* ===== SYSTEM PROMPT ===== */
+.system-prompt-section {
+  margin-bottom: 24px;
+}
+.system-prompt-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--gray-600);
+  margin-bottom: 10px;
+}
+.toggle-switch {
+  width: 40px;
+  height: 22px;
+  background: var(--gray-300);
+  border-radius: 11px;
+  position: relative;
+  transition: background 0.2s;
+  cursor: pointer;
+}
+.toggle-switch.active {
+  background: var(--green);
+}
+.toggle-switch::after {
+  content: '';
+  width: 18px;
+  height: 18px;
+  background: white;
+  border-radius: 50%;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.toggle-switch.active::after {
+  transform: translateX(18px);
+}
+
+/* ===== EXPORT SECTION ===== */
+.export-section {
+  display: flex;
+  gap: 12px;
+  padding-top: 20px;
+  border-top: 1px solid var(--gray-200);
+}
+
+/* ===== FORMAT SELECTOR ===== */
+.format-selector {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.format-option {
+  padding: 8px 16px;
+  border: 2px solid var(--gray-200);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--white);
+  color: var(--gray-600);
+  transition: all 0.2s;
+}
+.format-option.active {
+  border-color: var(--green);
+  background: var(--green-light);
+  color: var(--green-dark);
+}
+
+/* ===== JSON PREVIEW ===== */
+.json-preview {
+  background: var(--gray-800);
+  color: #e5e7eb;
+  border-radius: 10px;
+  padding: 20px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-x: auto;
+  max-height: 400px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.json-key { color: #93c5fd; }
+.json-string { color: #86efac; }
+.json-bracket { color: #d1d5db; }
+
+/* ===== EMPTY STATE ===== */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--gray-400);
+}
+.empty-state svg {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+.empty-state h3 {
+  font-size: 18px;
+  color: var(--gray-600);
+  margin-bottom: 8px;
+}
+.empty-state p {
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+/* ===== TOAST ===== */
+.toast {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  background: var(--gray-800);
+  color: white;
+  padding: 14px 24px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: var(--shadow-lg);
+  transform: translateY(100px);
+  opacity: 0;
+  transition: all 0.3s;
+  z-index: 1000;
+}
+.toast.show {
+  transform: translateY(0);
+  opacity: 1;
+}
+.toast.success { border-left: 4px solid var(--green); }
+.toast.error { border-left: 4px solid #dc2626; }
+
+/* ===== UPLOAD & CLEAN ===== */
+.upload-zone {
+  border: 2px dashed var(--gray-300);
+  border-radius: var(--radius);
+  padding: 48px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--gray-50);
+  position: relative;
+}
+.upload-zone:hover, .upload-zone.dragover {
+  border-color: var(--green);
+  background: var(--green-pale);
+}
+.upload-zone svg { width: 48px; height: 48px; color: var(--gray-400); margin-bottom: 12px; }
+.upload-zone h3 { font-size: 16px; color: var(--gray-700); margin-bottom: 6px; }
+.upload-zone p { font-size: 13px; color: var(--gray-500); }
+.upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.supported-formats {
+  display: flex; gap: 8px; justify-content: center; margin-top: 12px; flex-wrap: wrap;
+}
+.format-tag {
+  background: var(--white); border: 1px solid var(--gray-200); padding: 4px 12px;
+  border-radius: 6px; font-size: 12px; font-weight: 600; color: var(--gray-600);
+}
+
+/* Clean options */
+.clean-options {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;
+}
+.clean-option {
+  display: flex; align-items: center; gap: 10px; padding: 12px 16px;
+  background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 10px;
+  cursor: pointer; transition: all 0.2s;
+}
+.clean-option:hover { border-color: var(--green); }
+.clean-option input[type="checkbox"] {
+  width: 18px; height: 18px; accent-color: var(--green); cursor: pointer;
+}
+.clean-option-text { flex: 1; }
+.clean-option-text strong { display: block; font-size: 13px; color: var(--gray-800); }
+.clean-option-text span { font-size: 12px; color: var(--gray-500); }
+
+/* Column mapper */
+.column-mapper { margin-bottom: 20px; }
+.column-mapper h4 { font-size: 14px; color: var(--gray-700); margin-bottom: 12px; }
+.column-map-row {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 10px;
+}
+.column-map-row label {
+  width: 120px; font-size: 13px; font-weight: 600; color: var(--gray-600);
+  display: flex; align-items: center; gap: 6px;
+}
+.column-map-row select {
+  flex: 1; padding: 8px 12px; border: 1px solid var(--gray-300); border-radius: 8px;
+  font-size: 14px; background: var(--white); color: var(--gray-800);
+}
+.column-map-row select:focus {
+  outline: none; border-color: var(--green); box-shadow: 0 0 0 3px rgba(37,211,102,0.15);
+}
+
+/* Data preview table */
+.data-table-wrap {
+  overflow-x: auto; border: 1px solid var(--gray-200); border-radius: 10px; margin-bottom: 20px;
+}
+.data-table {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+}
+.data-table th {
+  background: var(--green-light); color: var(--green-dark); font-weight: 600;
+  padding: 10px 14px; text-align: left; white-space: nowrap;
+  border-bottom: 2px solid var(--green);
+}
+.data-table td {
+  padding: 8px 14px; border-bottom: 1px solid var(--gray-200);
+  max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.data-table tr:hover td { background: var(--green-pale); }
+.data-table tr.row-removed td {
+  background: #fef2f2; color: #dc2626; text-decoration: line-through; opacity: 0.6;
+}
+.data-table tr.row-cleaned td { background: #fffbeb; }
+
+/* Clean report */
+.clean-report {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px; margin-bottom: 20px;
+}
+.report-item {
+  background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 10px;
+  padding: 14px; text-align: center;
+}
+.report-item .report-value {
+  font-size: 22px; font-weight: 700; color: var(--green-dark);
+}
+.report-item .report-label {
+  font-size: 11px; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px;
+}
+.report-item.removed .report-value { color: #dc2626; }
+.report-item.warning .report-value { color: #d97706; }
+
+/* ===== MODEL BROWSER ===== */
+.search-bar {
+  display: flex; gap: 12px; margin-bottom: 20px;
+}
+.search-bar input {
+  flex: 1; padding: 12px 16px; border: 1px solid var(--gray-300); border-radius: 10px;
+  font-size: 15px; font-family: inherit; color: var(--gray-800); background: var(--white);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.search-bar input:focus {
+  outline: none; border-color: var(--green); box-shadow: 0 0 0 3px rgba(37,211,102,0.15);
+}
+.search-filters {
+  display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;
+}
+.filter-chip {
+  padding: 6px 14px; border: 1px solid var(--gray-200); border-radius: 20px;
+  font-size: 13px; font-weight: 500; cursor: pointer; background: var(--white);
+  color: var(--gray-600); transition: all 0.2s;
+}
+.filter-chip:hover { border-color: var(--green); color: var(--green-dark); }
+.filter-chip.active { background: var(--green); color: white; border-color: var(--green); }
+
+.model-grid {
+  display: grid; grid-template-columns: 1fr; gap: 16px;
+}
+.model-card {
+  background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius);
+  padding: 20px; transition: all 0.2s; cursor: pointer; position: relative;
+}
+.model-card:hover { border-color: var(--green); box-shadow: var(--shadow-md); }
+.model-card.selected { border-color: var(--green); border-width: 2px; background: var(--green-pale); }
+.model-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+.model-name { font-size: 16px; font-weight: 700; color: var(--gray-800); }
+.model-name a { color: inherit; text-decoration: none; }
+.model-name a:hover { color: var(--green-dark); }
+.model-org { font-size: 13px; color: var(--gray-500); margin-top: 2px; }
+.model-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+.model-badge {
+  padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600;
+}
+.model-badge.colab-yes { background: var(--green-light); color: var(--green-dark); }
+.model-badge.colab-maybe { background: #fef3c7; color: #92400e; }
+.model-badge.colab-no { background: #fee2e2; color: #dc2626; }
+.model-badge.size { background: var(--gray-100); color: var(--gray-600); }
+.model-badge.type { background: #ede9fe; color: #7c3aed; }
+.model-badge.popular { background: #fce7f3; color: #be185d; }
+.model-desc { font-size: 13px; color: var(--gray-600); margin-bottom: 12px; line-height: 1.5; }
+.model-pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.model-pros, .model-cons { font-size: 12px; line-height: 1.6; }
+.model-pros h5 { color: var(--green-dark); margin-bottom: 4px; font-size: 12px; }
+.model-cons h5 { color: #dc2626; margin-bottom: 4px; font-size: 12px; }
+.model-pros li, .model-cons li { color: var(--gray-600); margin-left: 14px; }
+.model-meta { display: flex; gap: 16px; font-size: 12px; color: var(--gray-500); flex-wrap: wrap; }
+.model-meta span { display: flex; align-items: center; gap: 4px; }
+.model-actions { display: flex; gap: 8px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--gray-200); }
+.model-loading { text-align: center; padding: 40px; color: var(--gray-500); }
+.model-loading .spinner {
+  width: 32px; height: 32px; border: 3px solid var(--gray-200); border-top-color: var(--green);
+  border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Recommended section */
+.recommended-section { margin-bottom: 28px; }
+.recommended-section h3 { font-size: 16px; font-weight: 600; color: var(--gray-800); margin-bottom: 14px; }
+.recommended-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+.rec-card {
+  background: var(--white); border: 2px solid var(--green-light); border-radius: var(--radius);
+  padding: 16px; cursor: pointer; transition: all 0.2s;
+}
+.rec-card:hover { border-color: var(--green); box-shadow: var(--shadow-md); }
+.rec-card h4 { font-size: 14px; font-weight: 700; color: var(--gray-800); margin-bottom: 4px; }
+.rec-card .rec-org { font-size: 12px; color: var(--gray-500); margin-bottom: 8px; }
+.rec-card .rec-desc { font-size: 12px; color: var(--gray-600); margin-bottom: 8px; line-height: 1.4; }
+.rec-card .rec-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* ===== TRAINING MONITOR ===== */
+.monitor-status {
+  display: flex; align-items: center; gap: 12px; padding: 16px 20px;
+  border-radius: 10px; margin-bottom: 20px; font-weight: 600; font-size: 15px;
+}
+.monitor-status.idle { background: var(--gray-100); color: var(--gray-600); }
+.monitor-status.running { background: var(--green-light); color: var(--green-dark); }
+.monitor-status.complete { background: #dcfce7; color: #15803d; }
+.monitor-status.error { background: #fee2e2; color: #dc2626; }
+.status-dot {
+  width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0;
+}
+.status-dot.idle { background: var(--gray-400); }
+.status-dot.running { background: var(--green); animation: pulse 1.5s infinite; }
+.status-dot.complete { background: #22c55e; }
+.status-dot.error { background: #dc2626; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+.progress-bar-wrap {
+  background: var(--gray-200); border-radius: 8px; height: 12px; overflow: hidden; margin-bottom: 8px;
+}
+.progress-bar-fill {
+  height: 100%; background: var(--green); border-radius: 8px;
+  transition: width 0.5s ease;
+}
+.progress-text { display: flex; justify-content: space-between; font-size: 12px; color: var(--gray-500); }
+
+.monitor-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px; margin-bottom: 24px;
+}
+.monitor-stat {
+  background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 10px;
+  padding: 16px; text-align: center;
+}
+.monitor-stat .m-value { font-size: 24px; font-weight: 700; color: var(--green-dark); }
+.monitor-stat .m-label { font-size: 11px; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+
+.chart-container {
+  position: relative; background: var(--white); border: 1px solid var(--gray-200);
+  border-radius: 10px; padding: 16px; margin-bottom: 20px;
+}
+.chart-container canvas { width: 100% !important; }
+.chart-title { font-size: 14px; font-weight: 600; color: var(--gray-700); margin-bottom: 12px; }
+
+.log-container {
+  max-height: 300px; overflow-y: auto; font-family: 'Consolas', monospace; font-size: 12px;
+  background: var(--gray-800); color: #e5e7eb; border-radius: 10px; padding: 16px;
+}
+.log-entry { padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; gap: 12px; }
+.log-time { color: var(--gray-500); white-space: nowrap; }
+.log-step { color: #93c5fd; white-space: nowrap; }
+.log-loss { color: #86efac; }
+
+/* ===== PLAYGROUND ===== */
+.chat-container {
+  display: flex; flex-direction: column; height: 500px; border: 1px solid var(--gray-200);
+  border-radius: var(--radius); overflow: hidden; background: var(--gray-50);
+}
+.chat-messages {
+  flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px;
+}
+.chat-msg {
+  max-width: 80%; padding: 12px 16px; border-radius: 12px; font-size: 14px; line-height: 1.5;
+}
+.chat-msg.user {
+  align-self: flex-end; background: var(--green); color: white; border-bottom-right-radius: 4px;
+}
+.chat-msg.assistant {
+  align-self: flex-start; background: var(--white); color: var(--gray-800);
+  border: 1px solid var(--gray-200); border-bottom-left-radius: 4px;
+}
+.chat-msg.system {
+  align-self: center; background: var(--gray-200); color: var(--gray-600);
+  font-size: 12px; border-radius: 8px;
+}
+.chat-input-bar {
+  display: flex; gap: 10px; padding: 16px; background: var(--white); border-top: 1px solid var(--gray-200);
+}
+.chat-input-bar input {
+  flex: 1; padding: 12px 16px; border: 1px solid var(--gray-300); border-radius: 10px;
+  font-size: 14px; font-family: inherit;
+}
+.chat-input-bar input:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 3px rgba(37,211,102,0.15); }
+
+/* ===== MODEL COMPARISON ===== */
+.compare-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+}
+.compare-col { display: flex; flex-direction: column; gap: 12px; }
+.compare-col h4 {
+  font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 8px; text-align: center;
+}
+.compare-col.base h4 { background: var(--gray-100); color: var(--gray-700); }
+.compare-col.tuned h4 { background: var(--green-light); color: var(--green-dark); }
+.compare-output {
+  background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 10px;
+  padding: 16px; min-height: 120px; font-size: 14px; line-height: 1.6; color: var(--gray-700);
+}
+.compare-metrics {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 16px;
+}
+.compare-metric {
+  text-align: center; padding: 12px; background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 10px;
+}
+.compare-metric .cm-value { font-size: 20px; font-weight: 700; }
+.compare-metric .cm-label { font-size: 11px; color: var(--gray-500); text-transform: uppercase; margin-top: 2px; }
+
+/* ===== EXPORT & SHARE ===== */
+.export-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px;
+}
+.export-card {
+  background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: var(--radius);
+  padding: 24px; text-align: center; transition: all 0.2s; cursor: pointer;
+}
+.export-card:hover { border-color: var(--green); box-shadow: var(--shadow-md); }
+.export-card svg { width: 40px; height: 40px; color: var(--green); margin-bottom: 12px; }
+.export-card h4 { font-size: 15px; font-weight: 600; color: var(--gray-800); margin-bottom: 6px; }
+.export-card p { font-size: 13px; color: var(--gray-500); }
+
+/* ===== LEARNING GUIDES ===== */
+.guide-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; margin-bottom: 24px;
+}
+.guide-card {
+  background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius);
+  padding: 24px; cursor: pointer; transition: all 0.2s;
+}
+.guide-card:hover { border-color: var(--green); box-shadow: var(--shadow-md); }
+.guide-card .guide-icon { font-size: 28px; margin-bottom: 12px; }
+.guide-card h4 { font-size: 15px; font-weight: 600; color: var(--gray-800); margin-bottom: 6px; }
+.guide-card p { font-size: 13px; color: var(--gray-500); line-height: 1.5; }
+.guide-card .guide-level {
+  display: inline-block; padding: 3px 10px; border-radius: 10px; font-size: 11px; font-weight: 600; margin-top: 10px;
+}
+.guide-card .beginner { background: var(--green-light); color: var(--green-dark); }
+.guide-card .intermediate { background: #fef3c7; color: #92400e; }
+.guide-card .advanced { background: #ede9fe; color: #7c3aed; }
+
+.guide-content {
+  background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius);
+  padding: 32px; line-height: 1.8; font-size: 15px; color: var(--gray-700);
+  display: none;
+}
+.guide-content h3 { font-size: 20px; color: var(--gray-800); margin: 24px 0 12px; }
+.guide-content h3:first-child { margin-top: 0; }
+.guide-content p { margin-bottom: 14px; }
+.guide-content code {
+  background: var(--gray-100); padding: 2px 8px; border-radius: 4px; font-size: 13px;
+  font-family: 'Consolas', monospace; color: var(--green-dark);
+}
+.guide-content pre {
+  background: var(--gray-800); color: #e5e7eb; padding: 16px; border-radius: 10px;
+  font-size: 13px; overflow-x: auto; margin: 14px 0; line-height: 1.5;
+}
+.guide-content ul, .guide-content ol { margin: 10px 0 14px 20px; }
+.guide-content li { margin-bottom: 6px; }
+.guide-content .tip {
+  background: var(--green-pale); border-left: 4px solid var(--green); padding: 12px 16px;
+  border-radius: 0 8px 8px 0; margin: 14px 0; font-size: 14px;
+}
+.guide-content .warning {
+  background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px 16px;
+  border-radius: 0 8px 8px 0; margin: 14px 0; font-size: 14px;
+}
+.guide-back {
+  display: inline-flex; align-items: center; gap: 6px; color: var(--green-dark);
+  font-weight: 600; cursor: pointer; margin-bottom: 16px; font-size: 14px;
+}
+.guide-back:hover { text-decoration: underline; }
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--gray-400); }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <h1>
+        <span>&#x2692;</span>
+        Fine-Tuning Lab
+      </h1>
+    </div>
+    <div class="sidebar-nav">
+      <button class="nav-item active" onclick="showPage('dataset-builder')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Dataset Builder
+        <span class="nav-badge" id="pair-count-badge">0</span>
+      </button>
+      <button class="nav-item" onclick="showPage('data-cleaner')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Upload & Clean
+      </button>
+      <button class="nav-item" onclick="showPage('model-browser')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Model Browser
+      </button>
+      <button class="nav-item" onclick="showPage('notebook-gen')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        Colab Generator
+      </button>
+      <button class="nav-item" onclick="showPage('training-monitor')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Training Monitor
+      </button>
+      <button class="nav-item" onclick="showPage('playground')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Playground
+      </button>
+      <button class="nav-item" onclick="showPage('comparison')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Model Comparison
+      </button>
+      <button class="nav-item" onclick="showPage('export')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export & Share
+      </button>
+      <button class="nav-item" onclick="showPage('guides')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        Learning Guides
+      </button>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <div class="main">
+
+    <!-- ===== DATASET BUILDER PAGE ===== -->
+    <div id="page-dataset-builder" class="page active">
+      <div class="page-header">
+        <h2>Dataset Builder</h2>
+        <p>Create training data pairs for fine-tuning. Each pair has a user message and an assistant response.</p>
+      </div>
+
+      <!-- Stats -->
+      <div class="dataset-stats">
+        <div class="stat-card">
+          <div class="stat-value" id="stat-pairs">0</div>
+          <div class="stat-label">Total Pairs</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-tokens">0</div>
+          <div class="stat-label">Est. Tokens</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-cost">Free</div>
+          <div class="stat-label">Est. Cost (Colab)</div>
+        </div>
+      </div>
+
+      <!-- System Prompt -->
+      <div class="card system-prompt-section">
+        <div class="system-prompt-toggle" onclick="toggleSystemPrompt()">
+          <div class="toggle-switch" id="system-toggle"></div>
+          <span>System Prompt (optional — sets the persona for your model)</span>
+        </div>
+        <div id="system-prompt-area" style="display:none;">
+          <textarea class="form-textarea" id="system-prompt" placeholder="You are a helpful assistant that specializes in..."></textarea>
+        </div>
+      </div>
+
+      <!-- Format Selector -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Training Format</h3>
+        </div>
+        <div class="format-selector">
+          <div class="format-option active" onclick="setFormat('chat', this)">Chat (Instruction)</div>
+          <div class="format-option" onclick="setFormat('completion', this)">Completion</div>
+          <div class="format-option" onclick="setFormat('qa', this)">Q&A</div>
+        </div>
+        <p style="font-size:13px; color:var(--gray-500);">
+          <strong>Chat:</strong> Best for assistants & chatbots.
+          <strong>Completion:</strong> Text continuation.
+          <strong>Q&A:</strong> Question-answer pairs.
+        </p>
+      </div>
+
+      <!-- Controls -->
+      <div class="dataset-controls">
+        <button class="btn btn-primary" onclick="addPair()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Pair
+        </button>
+        <button class="btn btn-secondary" onclick="addSampleData()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Load Sample Data
+        </button>
+        <button class="btn btn-secondary" onclick="clearAll()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+          Clear All
+        </button>
+        <button class="btn btn-secondary" onclick="saveToLocal()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Save Progress
+        </button>
+      </div>
+
+      <!-- Data Pairs Container -->
+      <div id="pairs-container">
+        <div class="empty-state" id="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+          <h3>No training pairs yet</h3>
+          <p>Click "Add Pair" to start building your dataset, or load sample data to see how it works.</p>
+          <button class="btn btn-primary" onclick="addSampleData()">Load Sample Data</button>
+        </div>
+      </div>
+
+      <!-- Preview & Export -->
+      <div class="card" id="preview-section" style="display:none;">
+        <div class="card-header">
+          <h3>JSONL Preview</h3>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-sm btn-secondary" onclick="copyJSON()">Copy</button>
+            <button class="btn btn-sm btn-primary" onclick="downloadJSONL()">Download .jsonl</button>
+          </div>
+        </div>
+        <div class="json-preview" id="json-preview"></div>
+      </div>
+    </div>
+
+    <!-- ===== UPLOAD & CLEAN PAGE ===== -->
+    <div id="page-data-cleaner" class="page">
+      <div class="page-header">
+        <h2>Upload & Clean</h2>
+        <p>Upload your data files, auto-clean them, and convert to training format.</p>
+      </div>
+
+      <!-- Step 1: Upload -->
+      <div class="card" id="upload-step">
+        <div class="card-header">
+          <h3>Step 1: Upload File</h3>
+        </div>
+        <div class="upload-zone" id="upload-zone">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          <h3>Drop your file here or click to browse</h3>
+          <p>Supports CSV, Excel, JSON, JSONL, and plain text files</p>
+          <div class="supported-formats">
+            <span class="format-tag">.csv</span>
+            <span class="format-tag">.xlsx</span>
+            <span class="format-tag">.json</span>
+            <span class="format-tag">.jsonl</span>
+            <span class="format-tag">.txt</span>
+          </div>
+          <input type="file" id="file-upload" accept=".csv,.xlsx,.xls,.json,.jsonl,.txt,.tsv" onchange="handleFileUpload(event)">
+        </div>
+      </div>
+
+      <!-- Step 2: Column Mapping (shown after upload) -->
+      <div class="card" id="column-step" style="display:none;">
+        <div class="card-header">
+          <h3>Step 2: Map Columns</h3>
+          <button class="btn btn-sm btn-secondary" onclick="resetUpload()">Upload Different File</button>
+        </div>
+        <p style="font-size:13px; color:var(--gray-500); margin-bottom:16px;">
+          Tell us which columns contain the user messages and assistant responses.
+        </p>
+        <div class="column-mapper">
+          <div class="column-map-row">
+            <label><span class="role-dot user"></span> User / Input</label>
+            <select id="col-user" onchange="updateCleanPreview()"><option value="">-- Select column --</option></select>
+          </div>
+          <div class="column-map-row">
+            <label><span class="role-dot assistant"></span> Assistant / Output</label>
+            <select id="col-assistant" onchange="updateCleanPreview()"><option value="">-- Select column --</option></select>
+          </div>
+          <div class="column-map-row">
+            <label style="color:var(--gray-400);">System (optional)</label>
+            <select id="col-system" onchange="updateCleanPreview()"><option value="">-- None --</option></select>
+          </div>
+        </div>
+
+        <!-- Raw data preview -->
+        <h4 style="font-size:14px; color:var(--gray-700); margin-bottom:10px;">Raw Data Preview (first 10 rows)</h4>
+        <div class="data-table-wrap" id="raw-table-wrap"></div>
+      </div>
+
+      <!-- Step 3: Clean Options (shown after mapping) -->
+      <div class="card" id="clean-step" style="display:none;">
+        <div class="card-header">
+          <h3>Step 3: Cleaning Options</h3>
+          <button class="btn btn-primary btn-sm" onclick="runCleaning()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            Run Cleaning
+          </button>
+        </div>
+        <div class="clean-options">
+          <label class="clean-option">
+            <input type="checkbox" id="clean-empty" checked>
+            <div class="clean-option-text">
+              <strong>Remove empty rows</strong>
+              <span>Delete rows where user or assistant is blank</span>
+            </div>
+          </label>
+          <label class="clean-option">
+            <input type="checkbox" id="clean-duplicates" checked>
+            <div class="clean-option-text">
+              <strong>Remove duplicates</strong>
+              <span>Remove rows with identical user+assistant text</span>
+            </div>
+          </label>
+          <label class="clean-option">
+            <input type="checkbox" id="clean-trim" checked>
+            <div class="clean-option-text">
+              <strong>Trim whitespace</strong>
+              <span>Remove leading/trailing spaces and extra line breaks</span>
+            </div>
+          </label>
+          <label class="clean-option">
+            <input type="checkbox" id="clean-encoding" checked>
+            <div class="clean-option-text">
+              <strong>Fix encoding</strong>
+              <span>Fix broken characters like &amp;amp; &amp;#39; etc.</span>
+            </div>
+          </label>
+          <label class="clean-option">
+            <input type="checkbox" id="clean-short">
+            <div class="clean-option-text">
+              <strong>Remove short responses</strong>
+              <span>Remove rows where assistant reply is under 10 characters</span>
+            </div>
+          </label>
+          <label class="clean-option">
+            <input type="checkbox" id="clean-long">
+            <div class="clean-option-text">
+              <strong>Truncate long text</strong>
+              <span>Cap text at 2000 characters per field</span>
+            </div>
+          </label>
+          <label class="clean-option">
+            <input type="checkbox" id="clean-html" checked>
+            <div class="clean-option-text">
+              <strong>Strip HTML tags</strong>
+              <span>Remove &lt;b&gt;, &lt;p&gt;, &lt;div&gt; and other HTML markup</span>
+            </div>
+          </label>
+          <label class="clean-option">
+            <input type="checkbox" id="clean-urls">
+            <div class="clean-option-text">
+              <strong>Remove URLs</strong>
+              <span>Strip http/https links from text</span>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Step 4: Clean Report (shown after cleaning) -->
+      <div class="card" id="report-step" style="display:none;">
+        <div class="card-header">
+          <h3>Cleaning Report</h3>
+        </div>
+        <div class="clean-report" id="clean-report"></div>
+
+        <!-- Cleaned preview -->
+        <h4 style="font-size:14px; color:var(--gray-700); margin-bottom:10px;">Cleaned Data Preview</h4>
+        <div class="data-table-wrap" id="clean-table-wrap"></div>
+
+        <!-- Actions -->
+        <div style="display:flex; gap:12px; margin-top:20px;">
+          <button class="btn btn-primary" onclick="sendToBuilder()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg>
+            Send to Dataset Builder
+          </button>
+          <button class="btn btn-secondary" onclick="downloadCleanedJSONL()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download Cleaned .jsonl
+          </button>
+          <button class="btn btn-secondary" onclick="runCleaning()">Re-run with Different Options</button>
+        </div>
+      </div>
+    </div>
+    <div id="page-model-browser" class="page">
+      <div class="page-header">
+        <h2>Model Browser</h2>
+        <p>Search HuggingFace models for fine-tuning. See pros, cons, and Colab compatibility.</p>
+      </div>
+
+      <!-- Recommended for beginners -->
+      <div class="recommended-section">
+        <h3>Recommended for Free Colab</h3>
+        <div class="recommended-grid">
+          <div class="rec-card" onclick="searchModels('unsloth/tinyllama')">
+            <h4>TinyLlama 1.1B</h4>
+            <div class="rec-org">TinyLlama / Unsloth</div>
+            <div class="rec-desc">Tiny but capable. Perfect for learning fine-tuning on free Colab. Trains in minutes.</div>
+            <div class="rec-tags">
+              <span class="model-badge colab-yes">Colab Free</span>
+              <span class="model-badge size">1.1B</span>
+              <span class="model-badge type">Chat</span>
+            </div>
+          </div>
+          <div class="rec-card" onclick="searchModels('unsloth/gemma-2-2b')">
+            <h4>Gemma 2 2B</h4>
+            <div class="rec-org">Google / Unsloth</div>
+            <div class="rec-desc">Google's small model. Great quality for its size. Excellent for learning.</div>
+            <div class="rec-tags">
+              <span class="model-badge colab-yes">Colab Free</span>
+              <span class="model-badge size">2B</span>
+              <span class="model-badge type">Chat</span>
+            </div>
+          </div>
+          <div class="rec-card" onclick="searchModels('unsloth/Phi-3.5-mini')">
+            <h4>Phi 3.5 Mini</h4>
+            <div class="rec-org">Microsoft / Unsloth</div>
+            <div class="rec-desc">Microsoft's compact powerhouse. Punches above its weight. Great for code + reasoning.</div>
+            <div class="rec-tags">
+              <span class="model-badge colab-yes">Colab Free</span>
+              <span class="model-badge size">3.8B</span>
+              <span class="model-badge type">Instruct</span>
+            </div>
+          </div>
+          <div class="rec-card" onclick="searchModels('unsloth/Llama-3.2-3B')">
+            <h4>Llama 3.2 3B</h4>
+            <div class="rec-org">Meta / Unsloth</div>
+            <div class="rec-desc">Meta's latest small model. Strong all-rounder. Good balance of quality and speed.</div>
+            <div class="rec-tags">
+              <span class="model-badge colab-yes">Colab Free</span>
+              <span class="model-badge size">3B</span>
+              <span class="model-badge type">Instruct</span>
+            </div>
+          </div>
+          <div class="rec-card" onclick="searchModels('unsloth/Mistral-7B')">
+            <h4>Mistral 7B</h4>
+            <div class="rec-org">Mistral AI / Unsloth</div>
+            <div class="rec-desc">Best 7B model. Excellent quality. Needs 4-bit quantization on free Colab.</div>
+            <div class="rec-tags">
+              <span class="model-badge colab-maybe">Colab (4-bit)</span>
+              <span class="model-badge size">7B</span>
+              <span class="model-badge type">Instruct</span>
+            </div>
+          </div>
+          <div class="rec-card" onclick="searchModels('unsloth/Llama-3.1-8B')">
+            <h4>Llama 3.1 8B</h4>
+            <div class="rec-org">Meta / Unsloth</div>
+            <div class="rec-desc">Industry standard. Most fine-tuning tutorials use this. Needs 4-bit on free Colab.</div>
+            <div class="rec-tags">
+              <span class="model-badge colab-maybe">Colab (4-bit)</span>
+              <span class="model-badge size">8B</span>
+              <span class="model-badge popular">Popular</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Search -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Search HuggingFace Models</h3>
+        </div>
+        <div class="search-bar">
+          <input type="text" id="model-search" placeholder="Search models... (e.g. llama, mistral, gemma, phi)" onkeydown="if(event.key==='Enter') searchModels()">
+          <button class="btn btn-primary" onclick="searchModels()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            Search
+          </button>
+        </div>
+        <div class="search-filters">
+          <span class="filter-chip active" onclick="setModelFilter('all', this)">All</span>
+          <span class="filter-chip" onclick="setModelFilter('text-generation', this)">Text Generation</span>
+          <span class="filter-chip" onclick="setModelFilter('text2text-generation', this)">Text2Text</span>
+          <span class="filter-chip" onclick="setModelFilter('question-answering', this)">Q&A</span>
+          <span class="filter-chip" onclick="setModelFilter('conversational', this)">Conversational</span>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div id="model-results">
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <h3>Search for a model</h3>
+          <p>Type a model name or click a recommended model above to get started.</p>
+        </div>
+      </div>
+
+      <!-- Selected Model Detail -->
+      <div class="card" id="model-detail" style="display:none;">
+        <div class="card-header">
+          <h3>Selected Model</h3>
+          <button class="btn btn-primary btn-sm" onclick="useSelectedModel()">
+            Use This Model
+          </button>
+        </div>
+        <div id="model-detail-content"></div>
+      </div>
+    </div>
+    <div id="page-notebook-gen" class="page">
+      <div class="page-header">
+        <h2>Colab Notebook Generator</h2>
+        <p>Auto-generate a ready-to-run Google Colab notebook for fine-tuning your selected model.</p>
+      </div>
+
+      <!-- Step 1: Summary -->
+      <div class="card">
+        <div class="card-header"><h3>Step 1: Review Setup</h3></div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+          <div class="stat-card">
+            <div class="stat-value" style="font-size:16px;" id="nb-model-name">No model selected</div>
+            <div class="stat-label">Selected Model</div>
+            <button class="btn btn-sm btn-secondary" style="margin-top:8px;" onclick="showPage('model-browser'); document.querySelectorAll('.nav-item')[2].click();">Change Model</button>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" style="font-size:16px;" id="nb-dataset-count">0 pairs</div>
+            <div class="stat-label">Dataset Size</div>
+            <button class="btn btn-sm btn-secondary" style="margin-top:8px;" onclick="showPage('dataset-builder'); document.querySelectorAll('.nav-item')[0].click();">Edit Dataset</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Training Config -->
+      <div class="card">
+        <div class="card-header"><h3>Step 2: Training Configuration</h3></div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+          <div class="form-group">
+            <label>LoRA Rank (r)</label>
+            <select class="form-select" id="nb-lora-r">
+              <option value="8">8 — Light (faster, less VRAM)</option>
+              <option value="16" selected>16 — Balanced (recommended)</option>
+              <option value="32">32 — Strong (more capacity)</option>
+              <option value="64">64 — Heavy (best quality, more VRAM)</option>
+            </select>
+            <span style="font-size:11px; color:var(--gray-500);">Higher = more trainable parameters = better quality but more VRAM</span>
+          </div>
+          <div class="form-group">
+            <label>LoRA Alpha</label>
+            <select class="form-select" id="nb-lora-alpha">
+              <option value="16">16</option>
+              <option value="32" selected>32</option>
+              <option value="64">64</option>
+            </select>
+            <span style="font-size:11px; color:var(--gray-500);">Scaling factor. Usually 2x the rank.</span>
+          </div>
+          <div class="form-group">
+            <label>Epochs</label>
+            <select class="form-select" id="nb-epochs">
+              <option value="1">1 — Quick test</option>
+              <option value="3" selected>3 — Standard</option>
+              <option value="5">5 — Thorough</option>
+              <option value="10">10 — Extended</option>
+            </select>
+            <span style="font-size:11px; color:var(--gray-500);">How many times the model sees your entire dataset</span>
+          </div>
+          <div class="form-group">
+            <label>Learning Rate</label>
+            <select class="form-select" id="nb-lr">
+              <option value="1e-5">1e-5 — Conservative</option>
+              <option value="2e-4" selected>2e-4 — Standard (Unsloth default)</option>
+              <option value="5e-4">5e-4 — Aggressive</option>
+            </select>
+            <span style="font-size:11px; color:var(--gray-500);">How fast the model learns. Too high = unstable, too low = slow</span>
+          </div>
+          <div class="form-group">
+            <label>Batch Size</label>
+            <select class="form-select" id="nb-batch">
+              <option value="1">1 — Minimum VRAM</option>
+              <option value="2" selected>2 — Standard for Colab</option>
+              <option value="4">4 — Faster (needs more VRAM)</option>
+            </select>
+            <span style="font-size:11px; color:var(--gray-500);">Samples per training step. Lower = less VRAM needed</span>
+          </div>
+          <div class="form-group">
+            <label>Max Sequence Length</label>
+            <select class="form-select" id="nb-maxlen">
+              <option value="512">512 — Short responses</option>
+              <option value="1024" selected>1024 — Standard</option>
+              <option value="2048">2048 — Long responses</option>
+            </select>
+            <span style="font-size:11px; color:var(--gray-500);">Max tokens per training example. Longer = more VRAM</span>
+          </div>
+          <div class="form-group">
+            <label>Quantization</label>
+            <select class="form-select" id="nb-quant">
+              <option value="4bit" selected>4-bit — Less VRAM (recommended for Colab)</option>
+              <option value="8bit">8-bit — Better quality, more VRAM</option>
+              <option value="none">None — Full precision (needs lots of VRAM)</option>
+            </select>
+            <span style="font-size:11px; color:var(--gray-500);">Reduces model size to fit in Colab's free GPU</span>
+          </div>
+          <div class="form-group">
+            <label>Optimizer</label>
+            <select class="form-select" id="nb-optimizer">
+              <option value="adamw_8bit" selected>AdamW 8-bit — Low VRAM (recommended)</option>
+              <option value="adamw_torch">AdamW — Standard</option>
+              <option value="sgd">SGD — Minimal VRAM</option>
+            </select>
+            <span style="font-size:11px; color:var(--gray-500);">Algorithm that updates model weights during training</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Output Options -->
+      <div class="card">
+        <div class="card-header"><h3>Step 3: After Training</h3></div>
+        <div class="clean-options">
+          <label class="clean-option">
+            <input type="checkbox" id="nb-save-hf" checked>
+            <div class="clean-option-text">
+              <strong>Push to HuggingFace</strong>
+              <span>Upload fine-tuned model to your HF account</span>
+            </div>
+          </label>
+          <label class="clean-option">
+            <input type="checkbox" id="nb-save-gguf">
+            <div class="clean-option-text">
+              <strong>Export GGUF</strong>
+              <span>Convert to GGUF format for local inference (llama.cpp, Ollama)</span>
+            </div>
+          </label>
+          <label class="clean-option">
+            <input type="checkbox" id="nb-merge" checked>
+            <div class="clean-option-text">
+              <strong>Merge LoRA weights</strong>
+              <span>Merge adapter into base model for easier deployment</span>
+            </div>
+          </label>
+          <label class="clean-option">
+            <input type="checkbox" id="nb-test" checked>
+            <div class="clean-option-text">
+              <strong>Test after training</strong>
+              <span>Run sample prompts after training to verify quality</span>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Generate Button -->
+      <div style="display:flex; gap:12px; margin-bottom:20px;">
+        <button class="btn btn-primary" onclick="generateNotebook()" style="padding:14px 32px; font-size:16px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          Generate Colab Notebook
+        </button>
+        <button class="btn btn-secondary" onclick="previewNotebook()" style="padding:14px 32px; font-size:16px;">
+          Preview Code
+        </button>
+      </div>
+
+      <!-- Code Preview -->
+      <div class="card" id="nb-preview" style="display:none;">
+        <div class="card-header">
+          <h3>Generated Notebook Code</h3>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-sm btn-secondary" onclick="copyNotebookCode()">Copy Code</button>
+            <button class="btn btn-sm btn-primary" onclick="generateNotebook()">Download .ipynb</button>
+          </div>
+        </div>
+        <div class="json-preview" id="nb-code-preview" style="max-height:600px;"></div>
+      </div>
+    </div>
+    <!-- ===== TRAINING MONITOR PAGE ===== -->
+    <div id="page-training-monitor" class="page">
+      <div class="page-header">
+        <h2>Training Monitor</h2>
+        <p>Track training progress with live loss curves, metrics, and logs. Simulate a training run to see how it works.</p>
+      </div>
+
+      <!-- Status -->
+      <div class="monitor-status idle" id="tm-status">
+        <span class="status-dot idle" id="tm-dot"></span>
+        <span id="tm-status-text">No training in progress</span>
+      </div>
+
+      <!-- Controls -->
+      <div class="card">
+        <div class="card-header"><h3>Training Simulation</h3></div>
+        <p style="font-size:13px; color:var(--gray-500); margin-bottom:16px;">
+          Since actual training runs on Google Colab, this simulator shows you what a real training session looks like — loss dropping, metrics updating, logs streaming.
+        </p>
+        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+          <button class="btn btn-primary" id="tm-start-btn" onclick="startSimulation()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Start Simulation
+          </button>
+          <button class="btn btn-secondary" id="tm-stop-btn" onclick="stopSimulation()" style="display:none;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+            Pause
+          </button>
+          <button class="btn btn-secondary" onclick="resetSimulation()">Reset</button>
+          <select class="form-select" id="tm-speed" style="width:auto;" onchange="updateSimSpeed()">
+            <option value="500">Speed: Fast</option>
+            <option value="1000" selected>Speed: Normal</option>
+            <option value="2000">Speed: Slow</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Progress -->
+      <div class="card" id="tm-progress-card" style="display:none;">
+        <div class="card-header"><h3>Progress</h3></div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" id="tm-progress-bar" style="width:0%"></div>
+        </div>
+        <div class="progress-text">
+          <span id="tm-progress-step">Step 0 / 0</span>
+          <span id="tm-progress-pct">0%</span>
+        </div>
+
+        <!-- Stats grid -->
+        <div class="monitor-grid" style="margin-top:20px;">
+          <div class="monitor-stat"><div class="m-value" id="tm-epoch">0/3</div><div class="m-label">Epoch</div></div>
+          <div class="monitor-stat"><div class="m-value" id="tm-loss">--</div><div class="m-label">Current Loss</div></div>
+          <div class="monitor-stat"><div class="m-value" id="tm-best-loss">--</div><div class="m-label">Best Loss</div></div>
+          <div class="monitor-stat"><div class="m-value" id="tm-lr">--</div><div class="m-label">Learning Rate</div></div>
+          <div class="monitor-stat"><div class="m-value" id="tm-speed-val">--</div><div class="m-label">Steps/sec</div></div>
+          <div class="monitor-stat"><div class="m-value" id="tm-eta">--</div><div class="m-label">ETA</div></div>
+        </div>
+      </div>
+
+      <!-- Loss Chart -->
+      <div class="card" id="tm-chart-card" style="display:none;">
+        <div class="card-header"><h3>Loss Curve</h3></div>
+        <div class="chart-container">
+          <canvas id="tm-canvas" height="280"></canvas>
+        </div>
+      </div>
+
+      <!-- Training Log -->
+      <div class="card" id="tm-log-card" style="display:none;">
+        <div class="card-header">
+          <h3>Training Log</h3>
+          <button class="btn btn-sm btn-secondary" onclick="clearLog()">Clear</button>
+        </div>
+        <div class="log-container" id="tm-log"></div>
+      </div>
+    </div>
+
+    <!-- ===== PLAYGROUND PAGE ===== -->
+    <div id="page-playground" class="page">
+      <div class="page-header">
+        <h2>Prompt Playground</h2>
+        <p>Test models by chatting with them. Uses HuggingFace Inference API (free tier).</p>
+      </div>
+
+      <!-- Model Selector -->
+      <div class="card">
+        <div class="card-header"><h3>Select Model to Chat With</h3></div>
+        <div style="display:flex; gap:12px; align-items:end; flex-wrap:wrap;">
+          <div class="form-group" style="flex:1; margin-bottom:0;">
+            <label>Model ID</label>
+            <input class="form-input" type="text" id="pg-model" placeholder="e.g. microsoft/DialoGPT-medium or your HF model">
+          </div>
+          <div class="form-group" style="width:200px; margin-bottom:0;">
+            <label>HF Token (optional)</label>
+            <input class="form-input" type="password" id="pg-token" placeholder="hf_...">
+          </div>
+          <button class="btn btn-primary" onclick="pgConnect()" style="margin-bottom:0;">Connect</button>
+        </div>
+        <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
+          <span style="font-size:12px; color:var(--gray-500);">Quick pick:</span>
+          <button class="btn btn-sm btn-secondary" onclick="pgSetModel('microsoft/DialoGPT-medium')">DialoGPT</button>
+          <button class="btn btn-sm btn-secondary" onclick="pgSetModel('facebook/blenderbot-400M-distill')">BlenderBot</button>
+          <button class="btn btn-sm btn-secondary" onclick="pgSetModel('HuggingFaceH4/zephyr-7b-beta')">Zephyr 7B</button>
+          <button class="btn btn-sm btn-secondary" onclick="pgSetModel('mistralai/Mistral-7B-Instruct-v0.2')">Mistral 7B</button>
+        </div>
+      </div>
+
+      <!-- Chat -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Chat</h3>
+          <button class="btn btn-sm btn-secondary" onclick="pgClearChat()">Clear Chat</button>
+        </div>
+        <div class="chat-container">
+          <div class="chat-messages" id="pg-messages">
+            <div class="chat-msg system">Connect to a model above to start chatting</div>
+          </div>
+          <div class="chat-input-bar">
+            <input type="text" id="pg-input" placeholder="Type your message..." onkeydown="if(event.key==='Enter') pgSend()" disabled>
+            <button class="btn btn-primary" id="pg-send-btn" onclick="pgSend()" disabled>Send</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings -->
+      <div class="card">
+        <div class="card-header"><h3>Generation Settings</h3></div>
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;">
+          <div class="form-group">
+            <label>Temperature: <span id="pg-temp-val">0.7</span></label>
+            <input type="range" min="0.1" max="2" step="0.1" value="0.7" id="pg-temp" oninput="document.getElementById('pg-temp-val').textContent=this.value" style="width:100%;">
+          </div>
+          <div class="form-group">
+            <label>Max Tokens</label>
+            <select class="form-select" id="pg-maxtokens">
+              <option value="64">64</option>
+              <option value="128">128</option>
+              <option value="256" selected>256</option>
+              <option value="512">512</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Top P: <span id="pg-topp-val">0.9</span></label>
+            <input type="range" min="0.1" max="1" step="0.05" value="0.9" id="pg-topp" oninput="document.getElementById('pg-topp-val').textContent=this.value" style="width:100%;">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== MODEL COMPARISON PAGE ===== -->
+    <div id="page-comparison" class="page">
+      <div class="page-header">
+        <h2>Model Comparison</h2>
+        <p>Compare outputs from two models side by side to see how fine-tuning improves responses.</p>
+      </div>
+
+      <!-- Model Selection -->
+      <div class="card">
+        <div class="card-header"><h3>Select Models</h3></div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+          <div class="form-group">
+            <label>Base Model (Before Fine-Tuning)</label>
+            <input class="form-input" type="text" id="cmp-base" placeholder="e.g. microsoft/DialoGPT-medium">
+          </div>
+          <div class="form-group">
+            <label>Fine-Tuned Model (After)</label>
+            <input class="form-input" type="text" id="cmp-tuned" placeholder="e.g. your-username/my-finetuned-model">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>HF Token (needed for gated/private models)</label>
+          <input class="form-input" type="password" id="cmp-token" placeholder="hf_... (optional)">
+        </div>
+      </div>
+
+      <!-- Test Prompts -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Test Prompts</h3>
+          <button class="btn btn-sm btn-primary" onclick="runComparison()">Run Comparison</button>
+        </div>
+        <div id="cmp-prompts">
+          <div class="form-group">
+            <label>Prompt 1</label>
+            <input class="form-input cmp-prompt" type="text" placeholder="Enter a test prompt..." value="What is fine-tuning?">
+          </div>
+          <div class="form-group">
+            <label>Prompt 2</label>
+            <input class="form-input cmp-prompt" type="text" placeholder="Enter a test prompt..." value="Explain LoRA in simple terms.">
+          </div>
+          <div class="form-group">
+            <label>Prompt 3</label>
+            <input class="form-input cmp-prompt" type="text" placeholder="Enter a test prompt...">
+          </div>
+        </div>
+        <button class="btn btn-sm btn-secondary" onclick="addComparePrompt()" style="margin-top:8px;">+ Add Prompt</button>
+      </div>
+
+      <!-- Results -->
+      <div id="cmp-results"></div>
+    </div>
+
+    <!-- ===== EXPORT & SHARE PAGE ===== -->
+    <div id="page-export" class="page">
+      <div class="page-header">
+        <h2>Export & Share</h2>
+        <p>Download your dataset and model artifacts or push to HuggingFace.</p>
+      </div>
+
+      <!-- Dataset Export -->
+      <div class="card">
+        <div class="card-header"><h3>Export Dataset</h3></div>
+        <div class="export-grid">
+          <div class="export-card" onclick="exportDatasetAs('jsonl')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <h4>JSONL</h4>
+            <p>Standard fine-tuning format. Works with OpenAI, HuggingFace, Unsloth.</p>
+          </div>
+          <div class="export-card" onclick="exportDatasetAs('json')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <h4>JSON</h4>
+            <p>Standard JSON array. Good for custom scripts and APIs.</p>
+          </div>
+          <div class="export-card" onclick="exportDatasetAs('csv')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <h4>CSV</h4>
+            <p>Spreadsheet format. Open in Excel or Google Sheets.</p>
+          </div>
+          <div class="export-card" onclick="exportDatasetAs('hf')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+            <h4>HuggingFace Dataset</h4>
+            <p>Generate a dataset card + files ready to upload to HuggingFace Hub.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notebook Export -->
+      <div class="card">
+        <div class="card-header"><h3>Export Training Notebook</h3></div>
+        <div class="export-grid">
+          <div class="export-card" onclick="generateNotebook()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            <h4>Colab Notebook (.ipynb)</h4>
+            <p>Download the generated training notebook for Google Colab.</p>
+          </div>
+          <div class="export-card" onclick="exportPythonScript()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            <h4>Python Script (.py)</h4>
+            <p>Export training code as a standalone Python script.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Project Export -->
+      <div class="card">
+        <div class="card-header"><h3>Export Entire Project</h3></div>
+        <div class="export-grid">
+          <div class="export-card" onclick="exportProject()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <h4>Full Project Bundle</h4>
+            <p>Dataset + notebook + config in one download. Share your entire setup.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== LEARNING GUIDES PAGE ===== -->
+    <div id="page-guides" class="page">
+      <div class="page-header">
+        <h2>Learning Guides</h2>
+        <p>Learn fine-tuning concepts step by step. From basics to advanced techniques.</p>
+      </div>
+
+      <!-- Guide Cards -->
+      <div class="guide-grid" id="guide-grid">
+        <div class="guide-card" onclick="openGuide('what-is-finetuning')">
+          <div class="guide-icon">&#x1F9E0;</div>
+          <h4>What is Fine-Tuning?</h4>
+          <p>Understand the basics: what fine-tuning does, when to use it, and how it differs from prompting and RAG.</p>
+          <span class="guide-level beginner">Beginner</span>
+        </div>
+        <div class="guide-card" onclick="openGuide('lora-explained')">
+          <div class="guide-icon">&#x1F9EC;</div>
+          <h4>LoRA Explained</h4>
+          <p>How LoRA makes fine-tuning possible on consumer hardware by training only a tiny fraction of parameters.</p>
+          <span class="guide-level beginner">Beginner</span>
+        </div>
+        <div class="guide-card" onclick="openGuide('dataset-quality')">
+          <div class="guide-icon">&#x1F4CA;</div>
+          <h4>Building Quality Datasets</h4>
+          <p>How to create, clean, and structure training data. Quality vs quantity, common mistakes, and best practices.</p>
+          <span class="guide-level beginner">Beginner</span>
+        </div>
+        <div class="guide-card" onclick="openGuide('choosing-model')">
+          <div class="guide-icon">&#x1F50D;</div>
+          <h4>Choosing the Right Model</h4>
+          <p>How to pick a base model for your use case. Size tradeoffs, license considerations, and recommendations.</p>
+          <span class="guide-level intermediate">Intermediate</span>
+        </div>
+        <div class="guide-card" onclick="openGuide('training-params')">
+          <div class="guide-icon">&#x2699;</div>
+          <h4>Training Parameters Guide</h4>
+          <p>Understanding epochs, learning rate, batch size, LoRA rank, and how to tune them for best results.</p>
+          <span class="guide-level intermediate">Intermediate</span>
+        </div>
+        <div class="guide-card" onclick="openGuide('evaluation')">
+          <div class="guide-icon">&#x1F4CF;</div>
+          <h4>Evaluating Your Model</h4>
+          <p>How to tell if your fine-tuned model is actually better. Metrics, testing strategies, and common pitfalls.</p>
+          <span class="guide-level intermediate">Intermediate</span>
+        </div>
+        <div class="guide-card" onclick="openGuide('quantization')">
+          <div class="guide-icon">&#x1F4E6;</div>
+          <h4>Quantization & GGUF</h4>
+          <p>Shrink models to run on smaller hardware. 4-bit, 8-bit, GGUF format, and Ollama integration.</p>
+          <span class="guide-level advanced">Advanced</span>
+        </div>
+        <div class="guide-card" onclick="openGuide('deployment')">
+          <div class="guide-icon">&#x1F680;</div>
+          <h4>Deploying Your Model</h4>
+          <p>Options for hosting your fine-tuned model: HuggingFace, Ollama local, API endpoints, and more.</p>
+          <span class="guide-level advanced">Advanced</span>
+        </div>
+      </div>
+
+      <!-- Guide Content (shown when a guide is opened) -->
+      <div class="guide-content" id="guide-content">
+        <div class="guide-back" onclick="closeGuide()">&#x2190; Back to all guides</div>
+        <div id="guide-body"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== STATE =====
+let pairs = [];
+let currentFormat = 'chat';
+let systemPromptEnabled = false;
+
+// ===== NAVIGATION =====
+function showPage(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + pageId).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+
+// ===== TOAST =====
+function showToast(msg, type = 'success') {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.className = 'toast ' + type + ' show';
+  setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+// ===== FORMAT =====
+function setFormat(format, el) {
+  currentFormat = format;
+  document.querySelectorAll('.format-option').forEach(f => f.classList.remove('active'));
+  el.classList.add('active');
+  updatePreview();
+}
+
+// ===== SYSTEM PROMPT =====
+function toggleSystemPrompt() {
+  systemPromptEnabled = !systemPromptEnabled;
+  document.getElementById('system-toggle').classList.toggle('active', systemPromptEnabled);
+  document.getElementById('system-prompt-area').style.display = systemPromptEnabled ? 'block' : 'none';
+  updatePreview();
+}
+
+// ===== ADD PAIR =====
+function addPair(userMsg = '', assistantMsg = '') {
+  const id = Date.now() + Math.random();
+  pairs.push({ id, user: userMsg, assistant: assistantMsg });
+  renderPairs();
+  updateStats();
+  updatePreview();
+  // Scroll to new pair
+  setTimeout(() => {
+    const container = document.getElementById('pairs-container');
+    const lastPair = container.lastElementChild;
+    if (lastPair) lastPair.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 50);
+}
+
+// ===== REMOVE PAIR =====
+function removePair(id) {
+  pairs = pairs.filter(p => p.id !== id);
+  renderPairs();
+  updateStats();
+  updatePreview();
+}
+
+// ===== DUPLICATE PAIR =====
+function duplicatePair(id) {
+  const pair = pairs.find(p => p.id === id);
+  if (pair) addPair(pair.user, pair.assistant);
+}
+
+// ===== MOVE PAIR =====
+function movePair(id, direction) {
+  const idx = pairs.findIndex(p => p.id === id);
+  const newIdx = idx + direction;
+  if (newIdx < 0 || newIdx >= pairs.length) return;
+  [pairs[idx], pairs[newIdx]] = [pairs[newIdx], pairs[idx]];
+  renderPairs();
+  updatePreview();
+}
+
+// ===== UPDATE PAIR =====
+function updatePair(id, field, value) {
+  const pair = pairs.find(p => p.id === id);
+  if (pair) {
+    pair[field] = value;
+    updateStats();
+    updatePreview();
+  }
+}
+
+// ===== RENDER PAIRS =====
+function renderPairs() {
+  const container = document.getElementById('pairs-container');
+  const emptyState = document.getElementById('empty-state');
+
+  if (pairs.length === 0) {
+    container.innerHTML = '';
+    container.appendChild(emptyState);
+    emptyState.style.display = 'block';
+    document.getElementById('preview-section').style.display = 'none';
+    return;
+  }
+
+  emptyState.style.display = 'none';
+  document.getElementById('preview-section').style.display = 'block';
+
+  container.innerHTML = pairs.map((pair, idx) => `
+    <div class="data-pair" data-id="${pair.id}">
+      <div class="data-pair-header">
+        <span class="data-pair-number">#${idx + 1}</span>
+        <div class="data-pair-actions">
+          <button class="btn-icon" onclick="movePair(${pair.id}, -1)" title="Move up">&#9650;</button>
+          <button class="btn-icon" onclick="movePair(${pair.id}, 1)" title="Move down">&#9660;</button>
+          <button class="btn-icon" onclick="duplicatePair(${pair.id})" title="Duplicate">&#x2398;</button>
+          <button class="btn-icon" onclick="removePair(${pair.id})" title="Delete" style="color:#dc2626;">&#x2715;</button>
+        </div>
+      </div>
+      <div class="data-pair-row">
+        <div class="data-pair-field">
+          <label><span class="role-dot user"></span> ${currentFormat === 'qa' ? 'Question' : 'User'}</label>
+          <textarea placeholder="Enter ${currentFormat === 'qa' ? 'question' : 'user message'}..." oninput="updatePair(${pair.id}, 'user', this.value)">${escapeHtml(pair.user)}</textarea>
+        </div>
+        <div class="data-pair-field">
+          <label><span class="role-dot assistant"></span> ${currentFormat === 'qa' ? 'Answer' : 'Assistant'}</label>
+          <textarea placeholder="Enter ${currentFormat === 'qa' ? 'answer' : 'assistant response'}..." oninput="updatePair(${pair.id}, 'assistant', this.value)">${escapeHtml(pair.assistant)}</textarea>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ===== UPDATE STATS =====
+function updateStats() {
+  document.getElementById('stat-pairs').textContent = pairs.length;
+  document.getElementById('pair-count-badge').textContent = pairs.length;
+
+  // Rough token estimate (~4 chars per token)
+  const totalChars = pairs.reduce((sum, p) => sum + p.user.length + p.assistant.length, 0);
+  const systemChars = systemPromptEnabled ? (document.getElementById('system-prompt').value || '').length : 0;
+  const tokens = Math.round((totalChars + systemChars * pairs.length) / 4);
+  document.getElementById('stat-tokens').textContent = tokens.toLocaleString();
+}
+
+// ===== UPDATE PREVIEW =====
+function updatePreview() {
+  if (pairs.length === 0) return;
+
+  const systemPrompt = systemPromptEnabled ? document.getElementById('system-prompt').value : '';
+  const preview = document.getElementById('json-preview');
+
+  const lines = pairs.filter(p => p.user || p.assistant).map(p => {
+    if (currentFormat === 'chat') {
+      const messages = [];
+      if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
+      messages.push({ role: 'user', content: p.user });
+      messages.push({ role: 'assistant', content: p.assistant });
+      return JSON.stringify({ messages });
+    } else if (currentFormat === 'completion') {
+      return JSON.stringify({ prompt: p.user, completion: p.assistant });
+    } else {
+      return JSON.stringify({ question: p.user, answer: p.assistant });
+    }
+  });
+
+  // Syntax highlight
+  const highlighted = lines.map(line => {
+    return line
+      .replace(/"([^"]+)":/g, '<span class="json-key">"$1"</span>:')
+      .replace(/:"([^"]*)"/g, ':<span class="json-string">"$1"</span>')
+      .replace(/[{}\[\]]/g, '<span class="json-bracket">$&</span>');
+  }).join('\n');
+
+  preview.innerHTML = highlighted;
+}
+
+// ===== SAMPLE DATA =====
+function addSampleData() {
+  const samples = [
+    { user: "What is fine-tuning?", assistant: "Fine-tuning is the process of taking a pre-trained language model and training it further on a specific dataset to adapt it for a particular task or domain. It allows you to customize the model's behavior without training from scratch." },
+    { user: "What is LoRA?", assistant: "LoRA (Low-Rank Adaptation) is a technique that freezes the original model weights and injects small trainable matrices into each layer. This dramatically reduces the number of parameters you need to train — often by 90%+ — making fine-tuning possible on consumer hardware." },
+    { user: "How much data do I need for fine-tuning?", assistant: "It depends on the task. For simple style/tone changes, 50-100 high-quality examples can work. For teaching new knowledge, you might need 500-1000+ examples. Quality matters more than quantity — 100 perfect examples beat 10,000 noisy ones." },
+    { user: "What is JSONL format?", assistant: "JSONL (JSON Lines) is a file format where each line is a valid JSON object. It's the standard format for fine-tuning datasets. Each line typically contains a conversation with roles (system, user, assistant) and their messages." },
+    { user: "What is the difference between fine-tuning and RAG?", assistant: "Fine-tuning changes the model's weights to bake in knowledge permanently. RAG (Retrieval-Augmented Generation) feeds relevant documents to the model at inference time. Fine-tuning is better for style/behavior changes; RAG is better for keeping knowledge up-to-date." }
+  ];
+
+  samples.forEach(s => {
+    pairs.push({ id: Date.now() + Math.random(), user: s.user, assistant: s.assistant });
+  });
+
+  renderPairs();
+  updateStats();
+  updatePreview();
+  showToast('5 sample pairs loaded!');
+}
+
+// ===== CLEAR ALL =====
+function clearAll() {
+  if (pairs.length === 0) return;
+  if (!confirm('Delete all training pairs? This cannot be undone.')) return;
+  pairs = [];
+  renderPairs();
+  updateStats();
+  showToast('All pairs cleared');
+}
+
+// ===== SAVE TO LOCAL STORAGE =====
+function saveToLocal() {
+  const data = {
+    pairs,
+    format: currentFormat,
+    systemPrompt: systemPromptEnabled ? document.getElementById('system-prompt').value : '',
+    systemPromptEnabled
+  };
+  localStorage.setItem('finetuning-lab-dataset', JSON.stringify(data));
+  showToast('Progress saved!');
+}
+
+// ===== LOAD FROM LOCAL STORAGE =====
+function loadFromLocal() {
+  const saved = localStorage.getItem('finetuning-lab-dataset');
+  if (!saved) return;
+  try {
+    const data = JSON.parse(saved);
+    pairs = data.pairs || [];
+    currentFormat = data.format || 'chat';
+    if (data.systemPromptEnabled) {
+      systemPromptEnabled = true;
+      document.getElementById('system-toggle').classList.add('active');
+      document.getElementById('system-prompt-area').style.display = 'block';
+      document.getElementById('system-prompt').value = data.systemPrompt || '';
+    }
+    // Set format selector
+    document.querySelectorAll('.format-option').forEach(f => {
+      f.classList.toggle('active', f.textContent.toLowerCase().includes(currentFormat));
+    });
+    renderPairs();
+    updateStats();
+    updatePreview();
+  } catch(e) {}
+}
+
+// ===== DOWNLOAD JSONL =====
+function downloadJSONL() {
+  if (pairs.length === 0) return showToast('No data to export', 'error');
+
+  const systemPrompt = systemPromptEnabled ? document.getElementById('system-prompt').value : '';
+
+  const lines = pairs.filter(p => p.user || p.assistant).map(p => {
+    if (currentFormat === 'chat') {
+      const messages = [];
+      if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
+      messages.push({ role: 'user', content: p.user });
+      messages.push({ role: 'assistant', content: p.assistant });
+      return JSON.stringify({ messages });
+    } else if (currentFormat === 'completion') {
+      return JSON.stringify({ prompt: p.user, completion: p.assistant });
+    } else {
+      return JSON.stringify({ question: p.user, answer: p.assistant });
+    }
+  });
+
+  const blob = new Blob([lines.join('\n')], { type: 'application/jsonl' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'dataset.jsonl';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Dataset downloaded!');
+}
+
+// ===== COPY JSON =====
+function copyJSON() {
+  const preview = document.getElementById('json-preview');
+  const text = preview.innerText;
+  navigator.clipboard.writeText(text).then(() => showToast('Copied to clipboard!'));
+}
+
+// ===== HELPERS =====
+function escapeHtml(str) {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// ===== INIT =====
+loadFromLocal();
+
+// Auto-save every 30 seconds
+setInterval(() => {
+  if (pairs.length > 0) saveToLocal();
+}, 30000);
+
+// Listen for system prompt changes
+document.getElementById('system-prompt').addEventListener('input', () => {
+  updateStats();
+  updatePreview();
+});
+
+// ===== UPLOAD & CLEAN =====
+let uploadedData = []; // array of objects (rows)
+let uploadedColumns = [];
+let cleanedData = [];
+
+// Drag & drop
+const uploadZone = document.getElementById('upload-zone');
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadZone.classList.remove('dragover');
+  if (e.dataTransfer.files.length) processFile(e.dataTransfer.files[0]);
+});
+
+function handleFileUpload(event) {
+  const file = event.target.files[0];
+  if (file) processFile(file);
+}
+
+function processFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  const reader = new FileReader();
+
+  if (ext === 'xlsx' || ext === 'xls') {
+    reader.onload = e => parseExcel(e.target.result, file.name);
+    reader.readAsArrayBuffer(file);
+  } else {
+    reader.onload = e => {
+      const text = e.target.result;
+      if (ext === 'csv' || ext === 'tsv') parseCSV(text, ext === 'tsv' ? '\t' : ',');
+      else if (ext === 'json') parseJSON(text);
+      else if (ext === 'jsonl') parseJSONL(text);
+      else if (ext === 'txt') parseTXT(text);
+      else showToast('Unsupported file type: ' + ext, 'error');
+    };
+    reader.readAsText(file);
+  }
+}
+
+function parseCSV(text, delimiter = ',') {
+  const lines = text.split('\n').filter(l => l.trim());
+  if (lines.length < 2) return showToast('File is empty or has no data rows', 'error');
+
+  // Simple CSV parser that handles quoted fields
+  function parseLine(line) {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        if (inQuotes && line[i + 1] === '"') { current += '"'; i++; }
+        else inQuotes = !inQuotes;
+      } else if (char === delimiter && !inQuotes) {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    result.push(current.trim());
+    return result;
+  }
+
+  const headers = parseLine(lines[0]);
+  uploadedColumns = headers;
+  uploadedData = [];
+
+  for (let i = 1; i < lines.length; i++) {
+    const values = parseLine(lines[i]);
+    const row = {};
+    headers.forEach((h, idx) => row[h] = values[idx] || '');
+    uploadedData.push(row);
+  }
+
+  showColumnMapping();
+}
+
+function parseJSON(text) {
+  try {
+    let data = JSON.parse(text);
+    if (!Array.isArray(data)) {
+      // Check if it has a data/rows key
+      const keys = Object.keys(data);
+      const arrayKey = keys.find(k => Array.isArray(data[k]));
+      if (arrayKey) data = data[arrayKey];
+      else return showToast('JSON must be an array of objects', 'error');
+    }
+    if (data.length === 0) return showToast('JSON array is empty', 'error');
+
+    // Check if it's chat format (has messages array)
+    if (data[0].messages && Array.isArray(data[0].messages)) {
+      uploadedColumns = ['system', 'user', 'assistant'];
+      uploadedData = data.map(item => {
+        const row = { system: '', user: '', assistant: '' };
+        item.messages.forEach(m => {
+          if (m.role === 'system') row.system = m.content || '';
+          else if (m.role === 'user') row.user = m.content || '';
+          else if (m.role === 'assistant') row.assistant = m.content || '';
+        });
+        return row;
+      });
+    } else {
+      uploadedColumns = Object.keys(data[0]);
+      uploadedData = data.map(item => {
+        const row = {};
+        uploadedColumns.forEach(k => row[k] = String(item[k] || ''));
+        return row;
+      });
+    }
+    showColumnMapping();
+  } catch (e) {
+    showToast('Invalid JSON: ' + e.message, 'error');
+  }
+}
+
+function parseJSONL(text) {
+  const lines = text.split('\n').filter(l => l.trim());
+  if (lines.length === 0) return showToast('File is empty', 'error');
+
+  try {
+    const first = JSON.parse(lines[0]);
+    // Check if chat format
+    if (first.messages && Array.isArray(first.messages)) {
+      uploadedColumns = ['system', 'user', 'assistant'];
+      uploadedData = lines.map(line => {
+        const item = JSON.parse(line);
+        const row = { system: '', user: '', assistant: '' };
+        (item.messages || []).forEach(m => {
+          if (m.role === 'system') row.system = m.content || '';
+          else if (m.role === 'user') row.user = m.content || '';
+          else if (m.role === 'assistant') row.assistant = m.content || '';
+        });
+        return row;
+      });
+    } else {
+      uploadedColumns = Object.keys(first);
+      uploadedData = lines.map(line => {
+        const item = JSON.parse(line);
+        const row = {};
+        uploadedColumns.forEach(k => row[k] = String(item[k] || ''));
+        return row;
+      });
+    }
+    showColumnMapping();
+  } catch (e) {
+    showToast('Invalid JSONL: ' + e.message, 'error');
+  }
+}
+
+function parseTXT(text) {
+  const lines = text.split('\n').filter(l => l.trim());
+  if (lines.length === 0) return showToast('File is empty', 'error');
+
+  // Try to detect pairs separated by blank lines or Q:/A: patterns
+  const qaPattern = /^(Q|Question|User|Human|Input)\s*[:>]/i;
+  const ansPattern = /^(A|Answer|Assistant|Bot|Output|Response)\s*[:>]/i;
+
+  let foundPairs = false;
+  uploadedData = [];
+
+  // Try Q/A pattern
+  for (let i = 0; i < lines.length; i++) {
+    if (qaPattern.test(lines[i]) && i + 1 < lines.length && ansPattern.test(lines[i + 1])) {
+      foundPairs = true;
+      uploadedData.push({
+        user: lines[i].replace(qaPattern, '').trim(),
+        assistant: lines[i + 1].replace(ansPattern, '').trim()
+      });
+      i++;
+    }
+  }
+
+  if (!foundPairs) {
+    // Treat alternating lines as user/assistant
+    for (let i = 0; i < lines.length - 1; i += 2) {
+      uploadedData.push({
+        user: lines[i].trim(),
+        assistant: (lines[i + 1] || '').trim()
+      });
+    }
+  }
+
+  uploadedColumns = ['user', 'assistant'];
+  showColumnMapping();
+}
+
+function parseExcel(buffer, filename) {
+  // Minimal XLSX parser — reads first sheet
+  // For full Excel support, we'd need a library, but we can handle simple cases
+  // We'll use a trick: convert to CSV-like format from the XML inside the zip
+  try {
+    // Try using a basic approach - read as text and detect CSV
+    showToast('For Excel files, please save as CSV first, then upload the CSV. Excel parsing without libraries is limited.', 'error');
+  } catch(e) {
+    showToast('Excel parsing failed. Please save as CSV and re-upload.', 'error');
+  }
+}
+
+function showColumnMapping() {
+  if (uploadedData.length === 0) return;
+
+  document.getElementById('upload-step').style.display = 'none';
+  document.getElementById('column-step').style.display = 'block';
+  document.getElementById('clean-step').style.display = 'block';
+  document.getElementById('report-step').style.display = 'none';
+
+  // Populate column dropdowns
+  ['col-user', 'col-assistant', 'col-system'].forEach(id => {
+    const select = document.getElementById(id);
+    const defaultLabel = id === 'col-system' ? '-- None --' : '-- Select column --';
+    select.innerHTML = `<option value="">${defaultLabel}</option>` +
+      uploadedColumns.map(c => `<option value="${c}">${c}</option>`).join('');
+  });
+
+  // Auto-detect columns
+  const userGuesses = ['user', 'input', 'question', 'prompt', 'human', 'instruction', 'text', 'query'];
+  const assistantGuesses = ['assistant', 'output', 'answer', 'response', 'completion', 'bot', 'reply', 'target'];
+  const systemGuesses = ['system', 'context', 'system_prompt', 'instruction'];
+
+  uploadedColumns.forEach(col => {
+    const lower = col.toLowerCase().trim();
+    if (userGuesses.includes(lower)) document.getElementById('col-user').value = col;
+    if (assistantGuesses.includes(lower)) document.getElementById('col-assistant').value = col;
+    if (systemGuesses.includes(lower)) document.getElementById('col-system').value = col;
+  });
+
+  // Render raw table
+  renderRawTable();
+
+  showToast(`Loaded ${uploadedData.length} rows with ${uploadedColumns.length} columns`);
+}
+
+function renderRawTable() {
+  const wrap = document.getElementById('raw-table-wrap');
+  const preview = uploadedData.slice(0, 10);
+
+  let html = '<table class="data-table"><thead><tr>';
+  html += '<th>#</th>';
+  uploadedColumns.forEach(c => html += `<th>${escapeHtml(c)}</th>`);
+  html += '</tr></thead><tbody>';
+
+  preview.forEach((row, i) => {
+    html += `<tr><td>${i + 1}</td>`;
+    uploadedColumns.forEach(c => html += `<td title="${escapeHtml(row[c] || '')}">${escapeHtml((row[c] || '').substring(0, 100))}</td>`);
+    html += '</tr>';
+  });
+
+  html += '</tbody></table>';
+  if (uploadedData.length > 10) html += `<p style="font-size:12px; color:var(--gray-500); padding:10px; text-align:center;">Showing 10 of ${uploadedData.length} rows</p>`;
+
+  wrap.innerHTML = html;
+}
+
+function updateCleanPreview() {
+  // Just re-render the table with highlighted mapped columns
+  renderRawTable();
+}
+
+function resetUpload() {
+  uploadedData = [];
+  uploadedColumns = [];
+  cleanedData = [];
+  document.getElementById('upload-step').style.display = 'block';
+  document.getElementById('column-step').style.display = 'none';
+  document.getElementById('clean-step').style.display = 'none';
+  document.getElementById('report-step').style.display = 'none';
+  document.getElementById('file-upload').value = '';
+}
+
+// ===== CLEANING ENGINE =====
+function runCleaning() {
+  const userCol = document.getElementById('col-user').value;
+  const assistantCol = document.getElementById('col-assistant').value;
+  const systemCol = document.getElementById('col-system').value;
+
+  if (!userCol || !assistantCol) {
+    return showToast('Please map both User and Assistant columns first', 'error');
+  }
+
+  // Get options
+  const opts = {
+    removeEmpty: document.getElementById('clean-empty').checked,
+    removeDuplicates: document.getElementById('clean-duplicates').checked,
+    trim: document.getElementById('clean-trim').checked,
+    fixEncoding: document.getElementById('clean-encoding').checked,
+    removeShort: document.getElementById('clean-short').checked,
+    truncateLong: document.getElementById('clean-long').checked,
+    stripHTML: document.getElementById('clean-html').checked,
+    removeURLs: document.getElementById('clean-urls').checked,
+  };
+
+  let data = uploadedData.map(row => ({
+    user: row[userCol] || '',
+    assistant: row[assistantCol] || '',
+    system: systemCol ? (row[systemCol] || '') : ''
+  }));
+
+  const originalCount = data.length;
+  let emptyRemoved = 0, dupsRemoved = 0, shortRemoved = 0, trimmed = 0, encodingFixed = 0, htmlStripped = 0, urlsRemoved = 0, truncated = 0;
+
+  // Clean functions
+  function fixEncodingText(text) {
+    let fixed = text
+      .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&apos;/g, "'")
+      .replace(/&#x27;/g, "'").replace(/&#x2F;/g, '/').replace(/&nbsp;/g, ' ')
+      .replace(/\u00a0/g, ' ').replace(/\u200b/g, '').replace(/\ufeff/g, '')
+      .replace(/\u2018|\u2019/g, "'").replace(/\u201c|\u201d/g, '"')
+      .replace(/\u2013/g, '-').replace(/\u2014/g, '--').replace(/\u2026/g, '...');
+    return fixed;
+  }
+
+  function stripHTMLTags(text) {
+    return text.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+  }
+
+  function removeURLsFromText(text) {
+    return text.replace(/https?:\/\/[^\s<>"{}|\\^`\[\]]+/g, '').replace(/\s+/g, ' ').trim();
+  }
+
+  // Apply cleaning
+  data = data.map(row => {
+    let u = row.user, a = row.assistant, s = row.system;
+
+    if (opts.stripHTML) {
+      const origU = u, origA = a;
+      u = stripHTMLTags(u); a = stripHTMLTags(a); s = stripHTMLTags(s);
+      if (u !== origU || a !== origA) htmlStripped++;
+    }
+
+    if (opts.removeURLs) {
+      const origU = u, origA = a;
+      u = removeURLsFromText(u); a = removeURLsFromText(a);
+      if (u !== origU || a !== origA) urlsRemoved++;
+    }
+
+    if (opts.fixEncoding) {
+      const origU = u, origA = a;
+      u = fixEncodingText(u); a = fixEncodingText(a); s = fixEncodingText(s);
+      if (u !== origU || a !== origA) encodingFixed++;
+    }
+
+    if (opts.trim) {
+      const origU = u, origA = a;
+      u = u.replace(/\s+/g, ' ').trim();
+      a = a.replace(/\s+/g, ' ').trim();
+      s = s.replace(/\s+/g, ' ').trim();
+      if (u !== origU || a !== origA) trimmed++;
+    }
+
+    if (opts.truncateLong) {
+      if (u.length > 2000 || a.length > 2000) truncated++;
+      u = u.substring(0, 2000);
+      a = a.substring(0, 2000);
+    }
+
+    return { user: u, assistant: a, system: s };
+  });
+
+  // Remove empty
+  if (opts.removeEmpty) {
+    const before = data.length;
+    data = data.filter(r => r.user.trim() && r.assistant.trim());
+    emptyRemoved = before - data.length;
+  }
+
+  // Remove short
+  if (opts.removeShort) {
+    const before = data.length;
+    data = data.filter(r => r.assistant.length >= 10);
+    shortRemoved = before - data.length;
+  }
+
+  // Remove duplicates
+  if (opts.removeDuplicates) {
+    const before = data.length;
+    const seen = new Set();
+    data = data.filter(r => {
+      const key = r.user.toLowerCase() + '|||' + r.assistant.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    dupsRemoved = before - data.length;
+  }
+
+  cleanedData = data;
+  const totalRemoved = originalCount - data.length;
+
+  // Show report
+  document.getElementById('report-step').style.display = 'block';
+  const reportHtml = `
+    <div class="report-item"><div class="report-value">${originalCount}</div><div class="report-label">Original Rows</div></div>
+    <div class="report-item"><div class="report-value">${data.length}</div><div class="report-label">Clean Rows</div></div>
+    <div class="report-item ${totalRemoved > 0 ? 'removed' : ''}"><div class="report-value">${totalRemoved}</div><div class="report-label">Rows Removed</div></div>
+    <div class="report-item ${emptyRemoved > 0 ? 'removed' : ''}"><div class="report-value">${emptyRemoved}</div><div class="report-label">Empty Removed</div></div>
+    <div class="report-item ${dupsRemoved > 0 ? 'warning' : ''}"><div class="report-value">${dupsRemoved}</div><div class="report-label">Duplicates</div></div>
+    <div class="report-item"><div class="report-value">${trimmed}</div><div class="report-label">Trimmed</div></div>
+    <div class="report-item"><div class="report-value">${encodingFixed}</div><div class="report-label">Encoding Fixed</div></div>
+    <div class="report-item"><div class="report-value">${htmlStripped}</div><div class="report-label">HTML Stripped</div></div>
+  `;
+  document.getElementById('clean-report').innerHTML = reportHtml;
+
+  // Render cleaned table
+  const wrap = document.getElementById('clean-table-wrap');
+  const preview = cleanedData.slice(0, 10);
+  let html = '<table class="data-table"><thead><tr><th>#</th><th>User</th><th>Assistant</th>';
+  if (cleanedData.some(r => r.system)) html += '<th>System</th>';
+  html += '</tr></thead><tbody>';
+  preview.forEach((row, i) => {
+    html += `<tr><td>${i + 1}</td>`;
+    html += `<td title="${escapeHtml(row.user)}">${escapeHtml(row.user.substring(0, 120))}</td>`;
+    html += `<td title="${escapeHtml(row.assistant)}">${escapeHtml(row.assistant.substring(0, 120))}</td>`;
+    if (cleanedData.some(r => r.system)) html += `<td title="${escapeHtml(row.system)}">${escapeHtml(row.system.substring(0, 80))}</td>`;
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  if (cleanedData.length > 10) html += `<p style="font-size:12px; color:var(--gray-500); padding:10px; text-align:center;">Showing 10 of ${cleanedData.length} rows</p>`;
+  wrap.innerHTML = html;
+
+  showToast(`Cleaning done! ${data.length} clean rows from ${originalCount} original`);
+
+  // Scroll to report
+  document.getElementById('report-step').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ===== SEND TO DATASET BUILDER =====
+function sendToBuilder() {
+  if (cleanedData.length === 0) return showToast('No cleaned data to send', 'error');
+
+  cleanedData.forEach(row => {
+    pairs.push({ id: Date.now() + Math.random(), user: row.user, assistant: row.assistant });
+  });
+
+  // If there's a system prompt in the data, set it
+  const withSystem = cleanedData.find(r => r.system);
+  if (withSystem && !systemPromptEnabled) {
+    systemPromptEnabled = true;
+    document.getElementById('system-toggle').classList.add('active');
+    document.getElementById('system-prompt-area').style.display = 'block';
+    document.getElementById('system-prompt').value = withSystem.system;
+  }
+
+  renderPairs();
+  updateStats();
+  updatePreview();
+
+  // Switch to dataset builder page
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-dataset-builder').classList.add('active');
+  document.querySelector('.nav-item').classList.add('active');
+
+  showToast(`${cleanedData.length} pairs sent to Dataset Builder!`);
+}
+
+// ===== DOWNLOAD CLEANED JSONL =====
+function downloadCleanedJSONL() {
+  if (cleanedData.length === 0) return showToast('No cleaned data', 'error');
+
+  const lines = cleanedData.map(row => {
+    const messages = [];
+    if (row.system) messages.push({ role: 'system', content: row.system });
+    messages.push({ role: 'user', content: row.user });
+    messages.push({ role: 'assistant', content: row.assistant });
+    return JSON.stringify({ messages });
+  });
+
+  const blob = new Blob([lines.join('\n')], { type: 'application/jsonl' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'dataset_cleaned.jsonl';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Cleaned dataset downloaded!');
+}
+
+// ===== MODEL BROWSER =====
+let selectedModel = null;
+let modelFilter = 'all';
+
+// Known model info database for pros/cons
+const modelDB = {
+  'tinyllama': {
+    pros: ['Extremely fast training', 'Runs easily on free Colab', 'Great for learning', 'Low VRAM (~2GB)'],
+    cons: ['Limited quality for complex tasks', 'Small context window', 'Not ideal for production'],
+    colab: 'yes', size: '1.1B', trainTime: '5-15 min', vram: '~2GB'
+  },
+  'gemma': {
+    pros: ['High quality for size', 'Google-backed', 'Good instruction following', 'Multilingual support'],
+    cons: ['Strict license for some versions', 'Needs HF token', 'Fewer community adapters'],
+    colab: 'yes', size: '2B', trainTime: '10-25 min', vram: '~4GB'
+  },
+  'phi': {
+    pros: ['Excellent reasoning', 'Great at code', 'Strong for its size', 'Microsoft-backed'],
+    cons: ['Can be verbose', 'Smaller community', 'Some benchmark concerns'],
+    colab: 'yes', size: '3.8B', trainTime: '15-30 min', vram: '~6GB'
+  },
+  'llama': {
+    pros: ['Industry standard', 'Huge community', 'Many tutorials', 'Strong all-rounder'],
+    cons: ['8B needs 4-bit quantization on free Colab', 'Meta license restrictions', 'Larger = slower training'],
+    colab: 'maybe', size: '3B-70B', trainTime: '20-60 min (8B)', vram: '~8GB (8B 4-bit)'
+  },
+  'mistral': {
+    pros: ['Best quality at 7B', 'Fast inference', 'Apache license', 'Great community support'],
+    cons: ['Needs 4-bit on free Colab', 'Larger than small models', 'Some versions gated'],
+    colab: 'maybe', size: '7B', trainTime: '25-45 min', vram: '~8GB (4-bit)'
+  },
+  'qwen': {
+    pros: ['Strong multilingual', 'Good at code', 'Multiple sizes available', 'Apache license'],
+    cons: ['Less English community support', 'Newer, less tested', 'Some versions large'],
+    colab: 'maybe', size: '0.5B-72B', trainTime: 'Varies', vram: 'Varies'
+  },
+  'falcon': {
+    pros: ['Open license', 'Good for text generation', 'Multiple sizes'],
+    cons: ['Older architecture', 'Less efficient than newer models', 'Declining community'],
+    colab: 'maybe', size: '1B-180B', trainTime: 'Varies', vram: 'Varies'
+  },
+  'opt': {
+    pros: ['Fully open', 'Good for research', 'Well documented'],
+    cons: ['Older model', 'Lower quality than modern alternatives', 'Not recommended for production'],
+    colab: 'yes', size: '125M-66B', trainTime: '5-20 min (small)', vram: '~2GB (small)'
+  }
+};
+
+function getModelInfo(modelId) {
+  const id = modelId.toLowerCase();
+  for (const [key, info] of Object.entries(modelDB)) {
+    if (id.includes(key)) return info;
+  }
+  // Default for unknown models
+  return {
+    pros: ['Community model', 'Available on HuggingFace'],
+    cons: ['Check VRAM requirements', 'Verify license', 'Test Colab compatibility'],
+    colab: 'maybe', size: 'Unknown', trainTime: 'Varies', vram: 'Check model card'
+  };
+}
+
+function getColabBadge(colab) {
+  if (colab === 'yes') return '<span class="model-badge colab-yes">Colab Free</span>';
+  if (colab === 'maybe') return '<span class="model-badge colab-maybe">Colab (4-bit)</span>';
+  return '<span class="model-badge colab-no">Too Large for Colab</span>';
+}
+
+function setModelFilter(filter, el) {
+  modelFilter = filter;
+  document.querySelectorAll('.filter-chip').forEach(f => f.classList.remove('active'));
+  el.classList.add('active');
+  // Re-search if there's a query
+  const query = document.getElementById('model-search').value;
+  if (query) searchModels(query);
+}
+
+async function searchModels(query) {
+  if (typeof query !== 'string') query = document.getElementById('model-search').value;
+  if (!query || !query.trim()) return showToast('Enter a model name to search', 'error');
+
+  document.getElementById('model-search').value = query;
+  const resultsDiv = document.getElementById('model-results');
+  resultsDiv.innerHTML = '<div class="model-loading"><div class="spinner"></div><p>Searching HuggingFace...</p></div>';
+
+  try {
+    let url = `https://huggingface.co/api/models?search=${encodeURIComponent(query)}&limit=12&sort=downloads&direction=-1`;
+    if (modelFilter !== 'all') url += `&pipeline_tag=${modelFilter}`;
+
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('HuggingFace API error');
+    const models = await response.json();
+
+    if (models.length === 0) {
+      resultsDiv.innerHTML = '<div class="empty-state"><h3>No models found</h3><p>Try a different search term.</p></div>';
+      return;
+    }
+
+    resultsDiv.innerHTML = '<div class="model-grid">' + models.map(m => {
+      const info = getModelInfo(m.id || m.modelId);
+      const modelId = m.id || m.modelId;
+      const parts = modelId.split('/');
+      const org = parts.length > 1 ? parts[0] : 'Unknown';
+      const name = parts.length > 1 ? parts[1] : parts[0];
+      const downloads = m.downloads ? (m.downloads > 1000000 ? (m.downloads / 1000000).toFixed(1) + 'M' : m.downloads > 1000 ? (m.downloads / 1000).toFixed(1) + 'K' : m.downloads) : '?';
+      const likes = m.likes || 0;
+      const pipeline = m.pipeline_tag || 'unknown';
+
+      // Determine size from model ID
+      let sizeLabel = info.size;
+      const sizeMatch = modelId.match(/(\d+\.?\d*)[bB]/);
+      if (sizeMatch) sizeLabel = sizeMatch[1] + 'B';
+      const sizeNum = sizeMatch ? parseFloat(sizeMatch[1]) : null;
+
+      let colabStatus = info.colab;
+      if (sizeNum) {
+        if (sizeNum <= 3) colabStatus = 'yes';
+        else if (sizeNum <= 8) colabStatus = 'maybe';
+        else colabStatus = 'no';
+      }
+
+      return `
+        <div class="model-card" onclick="selectModel('${modelId}', this)">
+          <div class="model-card-header">
+            <div>
+              <div class="model-name">${escapeHtml(name)}</div>
+              <div class="model-org">${escapeHtml(org)}</div>
+            </div>
+            <div class="model-badges">
+              ${getColabBadge(colabStatus)}
+              <span class="model-badge size">${sizeLabel}</span>
+              <span class="model-badge type">${pipeline}</span>
+              ${likes > 100 ? '<span class="model-badge popular">Popular</span>' : ''}
+            </div>
+          </div>
+          <div class="model-pros-cons">
+            <div class="model-pros">
+              <h5>Pros</h5>
+              <ul>${info.pros.map(p => `<li>${p}</li>`).join('')}</ul>
+            </div>
+            <div class="model-cons">
+              <h5>Cons</h5>
+              <ul>${info.cons.map(c => `<li>${c}</li>`).join('')}</ul>
+            </div>
+          </div>
+          <div class="model-meta">
+            <span>Downloads: ${downloads}</span>
+            <span>Likes: ${likes}</span>
+            <span>Est. Train: ${info.trainTime}</span>
+            <span>VRAM: ${info.vram}</span>
+          </div>
+          <div class="model-actions">
+            <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); selectModel('${modelId}', this.closest('.model-card'))">Select for Fine-Tuning</button>
+            <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); window.open('https://huggingface.co/${modelId}', '_blank')">View on HuggingFace</button>
+          </div>
+        </div>
+      `;
+    }).join('') + '</div>';
+
+  } catch (e) {
+    resultsDiv.innerHTML = `<div class="empty-state"><h3>Search failed</h3><p>${e.message}. Check your internet connection.</p></div>`;
+  }
+}
+
+function selectModel(modelId, cardEl) {
+  selectedModel = modelId;
+
+  // Highlight selected card
+  document.querySelectorAll('.model-card').forEach(c => c.classList.remove('selected'));
+  if (cardEl) cardEl.classList.add('selected');
+
+  // Store selection
+  localStorage.setItem('finetuning-lab-model', modelId);
+
+  const info = getModelInfo(modelId);
+  const detailDiv = document.getElementById('model-detail');
+  detailDiv.style.display = 'block';
+
+  document.getElementById('model-detail-content').innerHTML = `
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+      <div style="font-size:20px; font-weight:700; color:var(--green-dark);">${escapeHtml(modelId)}</div>
+      ${getColabBadge(info.colab)}
+    </div>
+    <div class="model-pros-cons">
+      <div class="model-pros">
+        <h5>Pros</h5>
+        <ul>${info.pros.map(p => `<li>${p}</li>`).join('')}</ul>
+      </div>
+      <div class="model-cons">
+        <h5>Cons</h5>
+        <ul>${info.cons.map(c => `<li>${c}</li>`).join('')}</ul>
+      </div>
+    </div>
+    <div class="model-meta" style="margin-top:12px;">
+      <span>Size: ${info.size}</span>
+      <span>Est. Train Time: ${info.trainTime}</span>
+      <span>VRAM Required: ${info.vram}</span>
+    </div>
+  `;
+
+  detailDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  showToast(`Selected: ${modelId}`);
+}
+
+function useSelectedModel() {
+  if (!selectedModel) return showToast('No model selected', 'error');
+  // Navigate to Colab Generator (placeholder for now)
+  showToast(`Model "${selectedModel}" saved! Head to Colab Generator to create a training notebook.`);
+}
+
+// Load saved model on init
+(function() {
+  const saved = localStorage.getItem('finetuning-lab-model');
+  if (saved) selectedModel = saved;
+})();
+
+// ===== COLAB NOTEBOOK GENERATOR =====
+
+// Update summary when page loads
+function updateNotebookSummary() {
+  const modelName = selectedModel || 'No model selected';
+  document.getElementById('nb-model-name').textContent = modelName;
+  document.getElementById('nb-dataset-count').textContent = pairs.length + ' pairs';
+}
+
+// Override showPage to update notebook summary
+const _origShowPage = showPage;
+showPage = function(pageId) {
+  _origShowPage.call(this, pageId);
+  if (pageId === 'notebook-gen') updateNotebookSummary();
+};
+
+function getNotebookCells() {
+  const model = selectedModel || 'unsloth/tinyllama-chat';
+  const loraR = document.getElementById('nb-lora-r').value;
+  const loraAlpha = document.getElementById('nb-lora-alpha').value;
+  const epochs = document.getElementById('nb-epochs').value;
+  const lr = document.getElementById('nb-lr').value;
+  const batch = document.getElementById('nb-batch').value;
+  const maxLen = document.getElementById('nb-maxlen').value;
+  const quant = document.getElementById('nb-quant').value;
+  const optimizer = document.getElementById('nb-optimizer').value;
+  const saveHF = document.getElementById('nb-save-hf').checked;
+  const saveGGUF = document.getElementById('nb-save-gguf').checked;
+  const merge = document.getElementById('nb-merge').checked;
+  const test = document.getElementById('nb-test').checked;
+
+  const quantCode = quant === '4bit' ? 'load_in_4bit = True,' : quant === '8bit' ? 'load_in_8bit = True,' : '';
+  const dtypeCode = quant === 'none' ? 'torch.float16' : 'None';
+
+  // Generate dataset JSON
+  const systemPrompt = systemPromptEnabled ? document.getElementById('system-prompt').value : '';
+  const datasetRows = pairs.slice(0, 500).map(p => {
+    const msgs = [];
+    if (systemPrompt) msgs.push({role: 'system', content: systemPrompt});
+    msgs.push({role: 'user', content: p.user});
+    msgs.push({role: 'assistant', content: p.assistant});
+    return JSON.stringify({messages: msgs});
+  });
+
+  const cells = [];
+
+  // Cell 1: Title
+  cells.push({
+    cell_type: 'markdown',
+    source: [
+      '# Fine-Tuning Lab - Training Notebook\\n',
+      '\\n',
+      `**Model:** \`${model}\`\\n`,
+      `**Dataset:** ${pairs.length} training pairs\\n`,
+      `**Config:** LoRA r=${loraR}, alpha=${loraAlpha}, epochs=${epochs}, lr=${lr}\\n`,
+      '\\n',
+      '*Generated by [Fine-Tuning Lab](https://github.com)*\\n',
+      '\\n',
+      '> Make sure you are using a **GPU runtime**: Runtime > Change runtime type > T4 GPU'
+    ]
+  });
+
+  // Cell 2: Install dependencies
+  cells.push({
+    cell_type: 'code',
+    source: [
+      '# Step 1: Install dependencies (takes ~2 minutes)\\n',
+      '!pip install "unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git"\\n',
+      '!pip install --no-deps trl peft accelerate bitsandbytes triton\\n',
+      '!pip install xformers'
+    ]
+  });
+
+  // Cell 3: Imports
+  cells.push({
+    cell_type: 'code',
+    source: [
+      '# Step 2: Import libraries\\n',
+      'from unsloth import FastLanguageModel\\n',
+      'import torch\\n',
+      'from trl import SFTTrainer\\n',
+      'from transformers import TrainingArguments\\n',
+      'from datasets import Dataset\\n',
+      'import json'
+    ]
+  });
+
+  // Cell 4: Load model
+  cells.push({
+    cell_type: 'code',
+    source: [
+      '# Step 3: Load the base model\\n',
+      `max_seq_length = ${maxLen}\\n`,
+      `dtype = ${dtypeCode}\\n`,
+      '\\n',
+      'model, tokenizer = FastLanguageModel.from_pretrained(\\n',
+      `    model_name = "${model}",\\n`,
+      `    max_seq_length = max_seq_length,\\n`,
+      `    dtype = dtype,\\n`,
+      `    ${quantCode}\\n`,
+      ')\\n',
+      '\\n',
+      'print(f"Model loaded: {model.config._name_or_path}")\\n',
+      'print(f"Parameters: {model.num_parameters():,}")'
+    ]
+  });
+
+  // Cell 5: Add LoRA adapters
+  cells.push({
+    cell_type: 'code',
+    source: [
+      '# Step 4: Add LoRA adapters\\n',
+      'model = FastLanguageModel.get_peft_model(\\n',
+      '    model,\\n',
+      `    r = ${loraR},\\n`,
+      `    lora_alpha = ${loraAlpha},\\n`,
+      '    lora_dropout = 0,\\n',
+      '    target_modules = ["q_proj", "k_proj", "v_proj", "o_proj",\\n',
+      '                      "gate_proj", "up_proj", "down_proj"],\\n',
+      '    bias = "none",\\n',
+      '    use_gradient_checkpointing = "unsloth",\\n',
+      ')\\n',
+      '\\n',
+      'print("LoRA adapters added!")\\n',
+      'trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)\\n',
+      'total = sum(p.numel() for p in model.parameters())\\n',
+      'print(f"Trainable: {trainable:,} / {total:,} ({100*trainable/total:.2f}%)")'
+    ]
+  });
+
+  // Cell 6: Prepare dataset
+  cells.push({
+    cell_type: 'code',
+    source: [
+      '# Step 5: Prepare training dataset\\n',
+      '\\n',
+      '# Your dataset from Fine-Tuning Lab\\n',
+      'raw_data = """\\n',
+      datasetRows.join('\\n') + '\\n',
+      '""".strip().split("\\n")\\n',
+      '\\n',
+      'dataset_list = [json.loads(line) for line in raw_data if line.strip()]\\n',
+      '\\n',
+      '# Format into chat template\\n',
+      'def format_chat(example):\\n',
+      '    text = tokenizer.apply_chat_template(\\n',
+      '        example["messages"],\\n',
+      '        tokenize=False,\\n',
+      '        add_generation_prompt=False\\n',
+      '    )\\n',
+      '    return {"text": text}\\n',
+      '\\n',
+      'dataset = Dataset.from_list(dataset_list)\\n',
+      'dataset = dataset.map(format_chat)\\n',
+      '\\n',
+      'print(f"Dataset ready: {len(dataset)} examples")\\n',
+      'print(f"Sample:\\n{dataset[0][\'text\'][:500]}")'
+    ]
+  });
+
+  // Cell 7: Training
+  cells.push({
+    cell_type: 'code',
+    source: [
+      '# Step 6: Train!\\n',
+      'trainer = SFTTrainer(\\n',
+      '    model = model,\\n',
+      '    tokenizer = tokenizer,\\n',
+      '    train_dataset = dataset,\\n',
+      '    dataset_text_field = "text",\\n',
+      `    max_seq_length = max_seq_length,\\n`,
+      '    dataset_num_proc = 2,\\n',
+      '    packing = False,\\n',
+      '    args = TrainingArguments(\\n',
+      `        per_device_train_batch_size = ${batch},\\n`,
+      '        gradient_accumulation_steps = 4,\\n',
+      '        warmup_steps = 5,\\n',
+      `        num_train_epochs = ${epochs},\\n`,
+      `        learning_rate = ${lr},\\n`,
+      '        fp16 = not torch.cuda.is_bf16_supported(),\\n',
+      '        bf16 = torch.cuda.is_bf16_supported(),\\n',
+      '        logging_steps = 1,\\n',
+      `        optim = "${optimizer}",\\n`,
+      '        weight_decay = 0.01,\\n',
+      '        lr_scheduler_type = "linear",\\n',
+      '        seed = 3407,\\n',
+      '        output_dir = "outputs",\\n',
+      '    ),\\n',
+      ')\\n',
+      '\\n',
+      'print("Starting training...")\\n',
+      'trainer_stats = trainer.train()\\n',
+      '\\n',
+      'print(f"\\nTraining complete!")\\n',
+      'print(f"Training loss: {trainer_stats.training_loss:.4f}")\\n',
+      'print(f"Total steps: {trainer_stats.global_step}")\\n',
+      'print(f"Training time: {trainer_stats.metrics[\'train_runtime\']:.0f}s")'
+    ]
+  });
+
+  // Cell 8: Plot loss
+  cells.push({
+    cell_type: 'code',
+    source: [
+      '# Step 7: Plot training loss\\n',
+      'import matplotlib.pyplot as plt\\n',
+      '\\n',
+      'logs = [l for l in trainer.state.log_history if "loss" in l]\\n',
+      'steps = [l["step"] for l in logs]\\n',
+      'losses = [l["loss"] for l in logs]\\n',
+      '\\n',
+      'plt.figure(figsize=(10, 4))\\n',
+      'plt.plot(steps, losses, color="#25D366", linewidth=2)\\n',
+      'plt.xlabel("Step")\\n',
+      'plt.ylabel("Loss")\\n',
+      'plt.title("Training Loss")\\n',
+      'plt.grid(True, alpha=0.3)\\n',
+      'plt.tight_layout()\\n',
+      'plt.show()\\n',
+      '\\n',
+      'print(f"Starting loss: {losses[0]:.4f}")\\n',
+      'print(f"Final loss: {losses[-1]:.4f}")\\n',
+      'print(f"Improvement: {((losses[0]-losses[-1])/losses[0]*100):.1f}%")'
+    ]
+  });
+
+  // Cell 9: Test (optional)
+  if (test) {
+    const testPrompts = pairs.slice(0, 3).map(p => p.user);
+    cells.push({
+      cell_type: 'code',
+      source: [
+        '# Step 8: Test the fine-tuned model\\n',
+        'FastLanguageModel.for_inference(model)\\n',
+        '\\n',
+        'test_prompts = ' + JSON.stringify(testPrompts) + '\\n',
+        '\\n',
+        'for prompt in test_prompts:\\n',
+        '    messages = [{"role": "user", "content": prompt}]\\n',
+        '    inputs = tokenizer.apply_chat_template(\\n',
+        '        messages, tokenize=True, add_generation_prompt=True, return_tensors="pt"\\n',
+        '    ).to("cuda")\\n',
+        '    \\n',
+        '    outputs = model.generate(input_ids=inputs, max_new_tokens=256, temperature=0.7)\\n',
+        '    response = tokenizer.decode(outputs[0], skip_special_tokens=True)\\n',
+        '    \\n',
+        '    print(f"\\n{\\'=\\'*50}")\\n',
+        '    print(f"User: {prompt}")\\n',
+        '    print(f"Assistant: {response.split(\\'assistant\\')[-1].strip() if \\'assistant\\' in response else response}")\\n'
+      ]
+    });
+  }
+
+  // Cell 10: Save/Push
+  if (merge || saveHF) {
+    let saveCode = ['# Step 9: Save the fine-tuned model\\n'];
+    if (merge) {
+      saveCode.push('# Merge LoRA weights into base model\\n');
+      saveCode.push('model.save_pretrained_merged("finetuned_model", tokenizer, save_method="merged_16bit")\\n');
+      saveCode.push('print("Model saved locally to ./finetuned_model")\\n');
+    }
+    if (saveHF) {
+      saveCode.push('\\n');
+      saveCode.push('# Push to HuggingFace Hub\\n');
+      saveCode.push('# Replace YOUR_USERNAME with your HuggingFace username\\n');
+      saveCode.push('HF_USERNAME = "YOUR_USERNAME"  # <-- CHANGE THIS\\n');
+      saveCode.push('MODEL_NAME = "my-finetuned-model"  # <-- CHANGE THIS\\n');
+      saveCode.push('\\n');
+      saveCode.push('model.push_to_hub_merged(\\n');
+      saveCode.push('    f"{HF_USERNAME}/{MODEL_NAME}",\\n');
+      saveCode.push('    tokenizer,\\n');
+      saveCode.push('    save_method="merged_16bit",\\n');
+      saveCode.push('    token=userdata.get("HF_TOKEN")  # Set in Colab Secrets\\n');
+      saveCode.push(')\\n');
+      saveCode.push('print(f"Model pushed to https://huggingface.co/{HF_USERNAME}/{MODEL_NAME}")');
+    }
+    cells.push({ cell_type: 'code', source: saveCode });
+  }
+
+  // Cell 11: GGUF export
+  if (saveGGUF) {
+    cells.push({
+      cell_type: 'code',
+      source: [
+        '# Step 10: Export to GGUF (for Ollama / llama.cpp)\\n',
+        'HF_USERNAME = "YOUR_USERNAME"  # <-- CHANGE THIS\\n',
+        'MODEL_NAME = "my-finetuned-model-gguf"  # <-- CHANGE THIS\\n',
+        '\\n',
+        'model.push_to_hub_gguf(\\n',
+        '    f"{HF_USERNAME}/{MODEL_NAME}",\\n',
+        '    tokenizer,\\n',
+        '    quantization_method = "q4_k_m",\\n',
+        '    token=userdata.get("HF_TOKEN")\\n',
+        ')\\n',
+        'print("GGUF model exported!")'
+      ]
+    });
+  }
+
+  return cells;
+}
+
+function buildNotebookJSON(cells) {
+  return {
+    nbformat: 4,
+    nbformat_minor: 0,
+    metadata: {
+      colab: { provenance: [], gpuType: "T4" },
+      kernelspec: { name: "python3", display_name: "Python 3" },
+      language_info: { name: "python" },
+      accelerator: "GPU"
+    },
+    cells: cells.map(c => ({
+      cell_type: c.cell_type,
+      metadata: c.cell_type === 'code' ? { id: Math.random().toString(36).slice(2,10) } : {},
+      source: c.source,
+      ...(c.cell_type === 'code' ? { execution_count: null, outputs: [] } : {})
+    }))
+  };
+}
+
+function generateNotebook() {
+  if (!selectedModel) return showToast('Select a model first in Model Browser', 'error');
+  if (pairs.length === 0) return showToast('Add training data in Dataset Builder first', 'error');
+
+  const cells = getNotebookCells();
+  const notebook = buildNotebookJSON(cells);
+
+  const blob = new Blob([JSON.stringify(notebook, null, 1)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const safeName = (selectedModel || 'model').replace(/[^a-zA-Z0-9]/g, '_');
+  a.download = `finetune_${safeName}.ipynb`;
+  a.click();
+  URL.revokeObjectURL(url);
+
+  showToast('Notebook downloaded! Open it in Google Colab.');
+}
+
+function previewNotebook() {
+  if (!selectedModel) return showToast('Select a model first in Model Browser', 'error');
+  if (pairs.length === 0) return showToast('Add training data in Dataset Builder first', 'error');
+
+  const cells = getNotebookCells();
+  const preview = document.getElementById('nb-preview');
+  preview.style.display = 'block';
+
+  const codeLines = cells.map(c => {
+    if (c.cell_type === 'markdown') {
+      return '<span style="color:#9ca3af;">## ' + c.source[0].replace('# ', '').replace('\\n', '') + '</span>';
+    }
+    return c.source.join('').replace(/\\n/g, '\n').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }).join('\n\n# ' + '='.repeat(50) + '\n\n');
+
+  document.getElementById('nb-code-preview').innerHTML = codeLines;
+  preview.scrollIntoView({ behavior: 'smooth' });
+}
+
+function copyNotebookCode() {
+  const el = document.getElementById('nb-code-preview');
+  navigator.clipboard.writeText(el.innerText).then(() => showToast('Code copied!'));
+}
+
+// ===== FEATURE 5: TRAINING MONITOR =====
+let simInterval = null;
+let simStep = 0;
+let simTotalSteps = 60;
+let simLosses = [];
+let simSpeed = 1000;
+let simRunning = false;
+
+function startSimulation() {
+  if (simRunning) return;
+  simRunning = true;
+
+  document.getElementById('tm-progress-card').style.display = 'block';
+  document.getElementById('tm-chart-card').style.display = 'block';
+  document.getElementById('tm-log-card').style.display = 'block';
+  document.getElementById('tm-start-btn').style.display = 'none';
+  document.getElementById('tm-stop-btn').style.display = 'inline-flex';
+
+  setMonitorStatus('running', 'Training in progress...');
+
+  const model = selectedModel || 'unsloth/tinyllama-chat';
+  addLog(`Starting fine-tuning: ${model}`);
+  addLog(`Dataset: ${pairs.length || 5} examples | Epochs: 3 | LoRA r=16`);
+  addLog('Loading model and tokenizer...');
+
+  setTimeout(() => {
+    addLog('Model loaded. Starting training loop...');
+    simInterval = setInterval(simTick, simSpeed);
+  }, simSpeed);
+}
+
+function simTick() {
+  if (simStep >= simTotalSteps) {
+    stopSimulation();
+    setMonitorStatus('complete', 'Training complete!');
+    addLog(`Training finished! Final loss: ${simLosses[simLosses.length-1].toFixed(4)}`);
+    addLog(`Total steps: ${simTotalSteps} | Best loss: ${Math.min(...simLosses).toFixed(4)}`);
+    document.getElementById('tm-start-btn').style.display = 'inline-flex';
+    document.getElementById('tm-stop-btn').style.display = 'none';
+    simRunning = false;
+    return;
+  }
+
+  simStep++;
+
+  // Simulate loss curve: starts ~2.5, drops exponentially with noise
+  const baseLoss = 2.5 * Math.exp(-simStep * 0.06) + 0.3;
+  const noise = (Math.random() - 0.5) * 0.15;
+  const loss = Math.max(0.1, baseLoss + noise);
+  simLosses.push(loss);
+
+  const epoch = Math.floor((simStep / simTotalSteps) * 3) + 1;
+  const lr = (2e-4 * (1 - simStep / simTotalSteps)).toExponential(2);
+  const pct = Math.round((simStep / simTotalSteps) * 100);
+  const eta = Math.round((simTotalSteps - simStep) * (simSpeed / 1000));
+
+  // Update UI
+  document.getElementById('tm-progress-bar').style.width = pct + '%';
+  document.getElementById('tm-progress-step').textContent = `Step ${simStep} / ${simTotalSteps}`;
+  document.getElementById('tm-progress-pct').textContent = pct + '%';
+  document.getElementById('tm-epoch').textContent = `${Math.min(epoch, 3)}/3`;
+  document.getElementById('tm-loss').textContent = loss.toFixed(4);
+  document.getElementById('tm-best-loss').textContent = Math.min(...simLosses).toFixed(4);
+  document.getElementById('tm-lr').textContent = lr;
+  document.getElementById('tm-speed-val').textContent = (1000 / simSpeed).toFixed(1);
+  document.getElementById('tm-eta').textContent = eta + 's';
+
+  if (simStep % 5 === 0) {
+    addLog(`Step ${simStep}/${simTotalSteps} | loss: ${loss.toFixed(4)} | lr: ${lr} | epoch: ${Math.min(epoch,3)}/3`);
+  }
+
+  drawLossChart();
+}
+
+function stopSimulation() {
+  if (simInterval) { clearInterval(simInterval); simInterval = null; }
+  if (simRunning && simStep < simTotalSteps) {
+    setMonitorStatus('idle', 'Training paused');
+    document.getElementById('tm-start-btn').style.display = 'inline-flex';
+    document.getElementById('tm-stop-btn').style.display = 'none';
+    simRunning = false;
+  }
+}
+
+function resetSimulation() {
+  stopSimulation();
+  simStep = 0;
+  simLosses = [];
+  simRunning = false;
+  setMonitorStatus('idle', 'No training in progress');
+  document.getElementById('tm-progress-card').style.display = 'none';
+  document.getElementById('tm-chart-card').style.display = 'none';
+  document.getElementById('tm-log-card').style.display = 'none';
+  document.getElementById('tm-start-btn').style.display = 'inline-flex';
+  document.getElementById('tm-stop-btn').style.display = 'none';
+  document.getElementById('tm-log').innerHTML = '';
+}
+
+function updateSimSpeed() {
+  simSpeed = parseInt(document.getElementById('tm-speed').value);
+  if (simRunning && simInterval) {
+    clearInterval(simInterval);
+    simInterval = setInterval(simTick, simSpeed);
+  }
+}
+
+function setMonitorStatus(status, text) {
+  const el = document.getElementById('tm-status');
+  const dot = document.getElementById('tm-dot');
+  el.className = 'monitor-status ' + status;
+  dot.className = 'status-dot ' + status;
+  document.getElementById('tm-status-text').textContent = text;
+}
+
+function addLog(msg) {
+  const log = document.getElementById('tm-log');
+  const time = new Date().toLocaleTimeString();
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  entry.innerHTML = `<span class="log-time">${time}</span><span class="log-loss">${msg}</span>`;
+  log.appendChild(entry);
+  log.scrollTop = log.scrollHeight;
+}
+
+function clearLog() {
+  document.getElementById('tm-log').innerHTML = '';
+}
+
+function drawLossChart() {
+  const canvas = document.getElementById('tm-canvas');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width = canvas.parentElement.clientWidth - 32;
+  const h = canvas.height = 280;
+
+  ctx.clearRect(0, 0, w, h);
+
+  if (simLosses.length < 2) return;
+
+  const pad = { top: 20, right: 20, bottom: 40, left: 60 };
+  const chartW = w - pad.left - pad.right;
+  const chartH = h - pad.top - pad.bottom;
+
+  const maxLoss = Math.max(...simLosses) * 1.1;
+  const minLoss = Math.min(0, Math.min(...simLosses) - 0.1);
+
+  // Grid lines
+  ctx.strokeStyle = '#e5e7eb';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 5; i++) {
+    const y = pad.top + (chartH / 5) * i;
+    ctx.beginPath();
+    ctx.moveTo(pad.left, y);
+    ctx.lineTo(w - pad.right, y);
+    ctx.stroke();
+
+    ctx.fillStyle = '#9ca3af';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'right';
+    const val = maxLoss - (maxLoss - minLoss) * (i / 5);
+    ctx.fillText(val.toFixed(2), pad.left - 8, y + 4);
+  }
+
+  // X axis labels
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#9ca3af';
+  const stepInterval = Math.max(1, Math.floor(simLosses.length / 6));
+  for (let i = 0; i < simLosses.length; i += stepInterval) {
+    const x = pad.left + (i / (simTotalSteps - 1)) * chartW;
+    ctx.fillText(i + 1, x, h - pad.bottom + 20);
+  }
+
+  // Axis labels
+  ctx.fillStyle = '#6b7280';
+  ctx.font = '12px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Step', w / 2, h - 4);
+  ctx.save();
+  ctx.translate(14, h / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('Loss', 0, 0);
+  ctx.restore();
+
+  // Loss line
+  ctx.strokeStyle = '#25D366';
+  ctx.lineWidth = 2.5;
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  simLosses.forEach((loss, i) => {
+    const x = pad.left + (i / (simTotalSteps - 1)) * chartW;
+    const y = pad.top + chartH - ((loss - minLoss) / (maxLoss - minLoss)) * chartH;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // Fill under curve
+  ctx.lineTo(pad.left + ((simLosses.length - 1) / (simTotalSteps - 1)) * chartW, pad.top + chartH);
+  ctx.lineTo(pad.left, pad.top + chartH);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(37, 211, 102, 0.1)';
+  ctx.fill();
+
+  // Current point
+  const lastX = pad.left + ((simLosses.length - 1) / (simTotalSteps - 1)) * chartW;
+  const lastY = pad.top + chartH - ((simLosses[simLosses.length - 1] - minLoss) / (maxLoss - minLoss)) * chartH;
+  ctx.beginPath();
+  ctx.arc(lastX, lastY, 5, 0, Math.PI * 2);
+  ctx.fillStyle = '#25D366';
+  ctx.fill();
+  ctx.strokeStyle = 'white';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+}
+
+// ===== FEATURE 6: PLAYGROUND =====
+let pgConnected = false;
+let pgModelId = '';
+let pgChatHistory = [];
+
+function pgSetModel(modelId) {
+  document.getElementById('pg-model').value = modelId;
+}
+
+function pgConnect() {
+  pgModelId = document.getElementById('pg-model').value.trim();
+  if (!pgModelId) return showToast('Enter a model ID', 'error');
+
+  pgConnected = true;
+  document.getElementById('pg-input').disabled = false;
+  document.getElementById('pg-send-btn').disabled = false;
+  pgChatHistory = [];
+
+  const msgs = document.getElementById('pg-messages');
+  msgs.innerHTML = `<div class="chat-msg system">Connected to ${escapeHtml(pgModelId)}. Start chatting!</div>`;
+  showToast('Connected to ' + pgModelId);
+}
+
+function pgClearChat() {
+  pgChatHistory = [];
+  const msgs = document.getElementById('pg-messages');
+  msgs.innerHTML = pgConnected
+    ? `<div class="chat-msg system">Chat cleared. Connected to ${escapeHtml(pgModelId)}</div>`
+    : `<div class="chat-msg system">Connect to a model above to start chatting</div>`;
+}
+
+async function pgSend() {
+  const input = document.getElementById('pg-input');
+  const msg = input.value.trim();
+  if (!msg || !pgConnected) return;
+
+  input.value = '';
+  const msgs = document.getElementById('pg-messages');
+
+  // Add user message
+  msgs.innerHTML += `<div class="chat-msg user">${escapeHtml(msg)}</div>`;
+  pgChatHistory.push({ role: 'user', content: msg });
+
+  // Loading indicator
+  const loadingId = 'loading-' + Date.now();
+  msgs.innerHTML += `<div class="chat-msg assistant" id="${loadingId}" style="opacity:0.6;">Thinking...</div>`;
+  msgs.scrollTop = msgs.scrollHeight;
+
+  const temp = parseFloat(document.getElementById('pg-temp').value);
+  const maxTokens = parseInt(document.getElementById('pg-maxtokens').value);
+  const topP = parseFloat(document.getElementById('pg-topp').value);
+  const token = document.getElementById('pg-token').value.trim();
+
+  try {
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const response = await fetch(`https://api-inference.huggingface.co/models/${pgModelId}`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        inputs: pgChatHistory.length <= 2 ? msg : pgChatHistory.map(m => `${m.role}: ${m.content}`).join('\n'),
+        parameters: {
+          max_new_tokens: maxTokens,
+          temperature: temp,
+          top_p: topP,
+          return_full_text: false,
+        }
+      })
+    });
+
+    const data = await response.json();
+    const loadingEl = document.getElementById(loadingId);
+
+    if (data.error) {
+      loadingEl.textContent = 'Error: ' + data.error;
+      loadingEl.style.color = '#dc2626';
+      loadingEl.style.opacity = '1';
+    } else {
+      const reply = data[0]?.generated_text || data.generated_text || JSON.stringify(data);
+      loadingEl.textContent = reply;
+      loadingEl.style.opacity = '1';
+      pgChatHistory.push({ role: 'assistant', content: reply });
+    }
+  } catch (e) {
+    const loadingEl = document.getElementById(loadingId);
+    loadingEl.textContent = 'Error: ' + e.message;
+    loadingEl.style.color = '#dc2626';
+    loadingEl.style.opacity = '1';
+  }
+
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+// ===== FEATURE 7: MODEL COMPARISON =====
+function addComparePrompt() {
+  const container = document.getElementById('cmp-prompts');
+  const count = container.querySelectorAll('.form-group').length + 1;
+  const div = document.createElement('div');
+  div.className = 'form-group';
+  div.innerHTML = `<label>Prompt ${count}</label><input class="form-input cmp-prompt" type="text" placeholder="Enter a test prompt...">`;
+  container.appendChild(div);
+}
+
+async function runComparison() {
+  const baseModel = document.getElementById('cmp-base').value.trim();
+  const tunedModel = document.getElementById('cmp-tuned').value.trim();
+  const token = document.getElementById('cmp-token').value.trim();
+
+  if (!baseModel || !tunedModel) return showToast('Enter both model IDs', 'error');
+
+  const prompts = Array.from(document.querySelectorAll('.cmp-prompt'))
+    .map(el => el.value.trim())
+    .filter(p => p);
+
+  if (prompts.length === 0) return showToast('Enter at least one prompt', 'error');
+
+  const resultsDiv = document.getElementById('cmp-results');
+  resultsDiv.innerHTML = '<div class="model-loading"><div class="spinner"></div><p>Running comparison...</p></div>';
+
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  async function queryModel(modelId, prompt) {
+    try {
+      const res = await fetch(`https://api-inference.huggingface.co/models/${modelId}`, {
+        method: 'POST', headers,
+        body: JSON.stringify({ inputs: prompt, parameters: { max_new_tokens: 256, temperature: 0.7, return_full_text: false } })
+      });
+      const data = await res.json();
+      if (data.error) return 'Error: ' + data.error;
+      return data[0]?.generated_text || data.generated_text || JSON.stringify(data);
+    } catch (e) {
+      return 'Error: ' + e.message;
+    }
+  }
+
+  let html = '';
+  for (const prompt of prompts) {
+    const [baseReply, tunedReply] = await Promise.all([
+      queryModel(baseModel, prompt),
+      queryModel(tunedModel, prompt)
+    ]);
+
+    const baseLen = baseReply.split(' ').length;
+    const tunedLen = tunedReply.split(' ').length;
+
+    html += `
+      <div class="card" style="margin-top:16px;">
+        <div class="card-header"><h3 style="font-size:14px;">"${escapeHtml(prompt)}"</h3></div>
+        <div class="compare-grid">
+          <div class="compare-col base">
+            <h4>Base: ${escapeHtml(baseModel.split('/').pop())}</h4>
+            <div class="compare-output">${escapeHtml(baseReply)}</div>
+          </div>
+          <div class="compare-col tuned">
+            <h4>Tuned: ${escapeHtml(tunedModel.split('/').pop())}</h4>
+            <div class="compare-output">${escapeHtml(tunedReply)}</div>
+          </div>
+        </div>
+        <div class="compare-metrics">
+          <div class="compare-metric"><div class="cm-value" style="color:var(--gray-600);">${baseLen}</div><div class="cm-label">Base Words</div></div>
+          <div class="compare-metric"><div class="cm-value" style="color:var(--green-dark);">${tunedLen}</div><div class="cm-label">Tuned Words</div></div>
+          <div class="compare-metric"><div class="cm-value" style="color:var(--gray-600);">${(baseReply.length/4).toFixed(0)}</div><div class="cm-label">Base Tokens</div></div>
+          <div class="compare-metric"><div class="cm-value" style="color:var(--green-dark);">${(tunedReply.length/4).toFixed(0)}</div><div class="cm-label">Tuned Tokens</div></div>
+        </div>
+      </div>
+    `;
+  }
+
+  resultsDiv.innerHTML = html;
+  showToast('Comparison complete!');
+}
+
+// ===== FEATURE 8: EXPORT & SHARE =====
+function exportDatasetAs(format) {
+  if (pairs.length === 0) return showToast('No dataset to export. Add data in Dataset Builder first.', 'error');
+
+  const systemPrompt = systemPromptEnabled ? document.getElementById('system-prompt').value : '';
+  let content, filename, type;
+
+  if (format === 'jsonl') {
+    const lines = pairs.map(p => {
+      const messages = [];
+      if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
+      messages.push({ role: 'user', content: p.user });
+      messages.push({ role: 'assistant', content: p.assistant });
+      return JSON.stringify({ messages });
+    });
+    content = lines.join('\n');
+    filename = 'dataset.jsonl';
+    type = 'application/jsonl';
+  } else if (format === 'json') {
+    const data = pairs.map(p => {
+      const messages = [];
+      if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
+      messages.push({ role: 'user', content: p.user });
+      messages.push({ role: 'assistant', content: p.assistant });
+      return { messages };
+    });
+    content = JSON.stringify(data, null, 2);
+    filename = 'dataset.json';
+    type = 'application/json';
+  } else if (format === 'csv') {
+    const header = 'user,assistant' + (systemPrompt ? ',system' : '');
+    const rows = pairs.map(p => {
+      const u = '"' + p.user.replace(/"/g, '""') + '"';
+      const a = '"' + p.assistant.replace(/"/g, '""') + '"';
+      return systemPrompt ? `${u},${a},"${systemPrompt.replace(/"/g, '""')}"` : `${u},${a}`;
+    });
+    content = header + '\n' + rows.join('\n');
+    filename = 'dataset.csv';
+    type = 'text/csv';
+  } else if (format === 'hf') {
+    // Generate HuggingFace dataset card
+    const card = `---
+dataset_info:
+  features:
+    - name: messages
+      list:
+        - name: role
+          dtype: string
+        - name: content
+          dtype: string
+  splits:
+    - name: train
+      num_examples: ${pairs.length}
+license: mit
+task_categories:
+  - text-generation
+tags:
+  - fine-tuning
+  - fine-tuning-lab
+---
+
+# Fine-Tuning Dataset
+
+Generated by **Fine-Tuning Lab**
+
+## Dataset Details
+- **Size:** ${pairs.length} examples
+- **Format:** Chat/Instruction
+- **Created:** ${new Date().toISOString().split('T')[0]}
+
+## Usage
+\`\`\`python
+from datasets import load_dataset
+dataset = load_dataset("your-username/your-dataset")
+\`\`\`
+`;
+    content = card;
+    filename = 'README.md';
+    type = 'text/markdown';
+    // Also trigger JSONL download
+    setTimeout(() => exportDatasetAs('jsonl'), 500);
+  }
+
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+  showToast(`Exported as ${filename}!`);
+}
+
+function exportPythonScript() {
+  if (!selectedModel) return showToast('Select a model first in Model Browser', 'error');
+  if (pairs.length === 0) return showToast('Add training data first', 'error');
+
+  const cells = getNotebookCells();
+  const code = cells
+    .filter(c => c.cell_type === 'code')
+    .map(c => c.source.join('').replace(/\\n/g, '\n'))
+    .join('\n\n# ' + '='.repeat(50) + '\n\n');
+
+  const header = `#!/usr/bin/env python3
+"""
+Fine-Tuning Script — Generated by Fine-Tuning Lab
+Model: ${selectedModel}
+Dataset: ${pairs.length} examples
+Date: ${new Date().toISOString().split('T')[0]}
+"""
+
+`;
+
+  const blob = new Blob([header + code], { type: 'text/python' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'finetune_script.py'; a.click();
+  URL.revokeObjectURL(url);
+  showToast('Python script downloaded!');
+}
+
+function exportProject() {
+  if (pairs.length === 0) return showToast('No data to export', 'error');
+
+  // Create a combined JSON with all project data
+  const project = {
+    name: 'Fine-Tuning Lab Project',
+    created: new Date().toISOString(),
+    model: selectedModel || 'not selected',
+    dataset: {
+      format: currentFormat,
+      systemPrompt: systemPromptEnabled ? document.getElementById('system-prompt').value : '',
+      pairs: pairs.map(p => ({ user: p.user, assistant: p.assistant }))
+    },
+    config: {
+      loraR: document.getElementById('nb-lora-r')?.value || '16',
+      loraAlpha: document.getElementById('nb-lora-alpha')?.value || '32',
+      epochs: document.getElementById('nb-epochs')?.value || '3',
+      learningRate: document.getElementById('nb-lr')?.value || '2e-4',
+      batchSize: document.getElementById('nb-batch')?.value || '2',
+      maxSeqLen: document.getElementById('nb-maxlen')?.value || '1024',
+    }
+  };
+
+  const blob = new Blob([JSON.stringify(project, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'finetuning_lab_project.json'; a.click();
+  URL.revokeObjectURL(url);
+  showToast('Project bundle downloaded!');
+}
+
+// ===== FEATURE 9: LEARNING GUIDES =====
+const guides = {
+  'what-is-finetuning': {
+    title: 'What is Fine-Tuning?',
+    content: `
+      <h3>The Big Picture</h3>
+      <p>Imagine you hire a very smart person who knows a lot about everything — that's a <strong>base model</strong> like Llama or Mistral. They're great at general tasks, but they don't know your specific business, your writing style, or your domain.</p>
+      <p><strong>Fine-tuning</strong> is like giving that smart person specialized training. You show them examples of exactly what you want, and they learn to respond in that specific way.</p>
+
+      <h3>How It Works</h3>
+      <ol>
+        <li><strong>Start with a pre-trained model</strong> — a model that already knows language (Llama, Mistral, Gemma, etc.)</li>
+        <li><strong>Prepare training data</strong> — examples of inputs and desired outputs</li>
+        <li><strong>Train on your data</strong> — the model adjusts its weights to match your examples</li>
+        <li><strong>Result</strong> — a model that behaves the way you want</li>
+      </ol>
+
+      <h3>When to Fine-Tune vs. Other Approaches</h3>
+      <div class="tip">Use fine-tuning when you need to change HOW the model responds — its style, format, personality, or specialized knowledge.</div>
+
+      <table style="width:100%; border-collapse:collapse; margin:14px 0;">
+        <tr style="background:var(--green-light);"><th style="padding:10px; text-align:left;">Approach</th><th style="padding:10px; text-align:left;">Best For</th><th style="padding:10px; text-align:left;">Example</th></tr>
+        <tr style="border-bottom:1px solid var(--gray-200);"><td style="padding:10px;"><strong>Prompting</strong></td><td style="padding:10px;">Quick tasks, no training needed</td><td style="padding:10px;">"Summarize this article"</td></tr>
+        <tr style="border-bottom:1px solid var(--gray-200);"><td style="padding:10px;"><strong>RAG</strong></td><td style="padding:10px;">Up-to-date knowledge, documents</td><td style="padding:10px;">"Answer based on our docs"</td></tr>
+        <tr style="border-bottom:1px solid var(--gray-200);"><td style="padding:10px;"><strong>Fine-tuning</strong></td><td style="padding:10px;">Style, behavior, specialized tasks</td><td style="padding:10px;">"Respond like our brand voice"</td></tr>
+      </table>
+
+      <h3>Real Examples</h3>
+      <ul>
+        <li><strong>Customer support bot</strong> — fine-tune on your support tickets to learn your tone and product knowledge</li>
+        <li><strong>Code assistant</strong> — fine-tune on your codebase patterns to suggest code in your style</li>
+        <li><strong>Medical Q&A</strong> — fine-tune on medical literature for domain-specific accuracy</li>
+        <li><strong>Creative writing</strong> — fine-tune on an author's works to mimic their style</li>
+      </ul>
+
+      <div class="warning"><strong>Important:</strong> Fine-tuning doesn't add new factual knowledge reliably. It's best for changing behavior and style, not for teaching facts. Use RAG for knowledge.</div>
+    `
+  },
+
+  'lora-explained': {
+    title: 'LoRA Explained',
+    content: `
+      <h3>The Problem</h3>
+      <p>A model like Llama 8B has <strong>8 billion parameters</strong>. Training all of them requires massive amounts of GPU memory (VRAM) — far more than a free Colab GPU has.</p>
+
+      <h3>The Solution: LoRA</h3>
+      <p><strong>LoRA (Low-Rank Adaptation)</strong> is a clever trick: instead of training all 8 billion parameters, you <strong>freeze the original weights</strong> and attach small trainable matrices (called adapters) to key layers.</p>
+
+      <p>Think of it like this: instead of rewriting an entire book, you're adding sticky notes with corrections on specific pages.</p>
+
+      <h3>How LoRA Works</h3>
+      <ol>
+        <li><strong>Freeze</strong> — lock all original model weights (they don't change)</li>
+        <li><strong>Inject</strong> — add small matrices (adapters) to attention layers</li>
+        <li><strong>Train</strong> — only the small adapters get updated</li>
+        <li><strong>Result</strong> — you train ~1-5% of total parameters instead of 100%</li>
+      </ol>
+
+      <pre>Original model: 8,000,000,000 parameters (frozen)
+LoRA adapters:     40,000,000 parameters (trainable)
+= Only 0.5% of parameters need training!</pre>
+
+      <h3>Key Parameters</h3>
+      <ul>
+        <li><strong>Rank (r)</strong> — Size of the adapter matrices. Higher = more capacity but more VRAM. Start with 16.</li>
+        <li><strong>Alpha</strong> — Scaling factor. Usually set to 2x the rank. Controls how much the adapters influence the output.</li>
+        <li><strong>Target modules</strong> — Which layers get adapters. Usually attention layers (q_proj, v_proj, etc.)</li>
+        <li><strong>Dropout</strong> — Regularization to prevent overfitting. Usually 0 with LoRA.</li>
+      </ul>
+
+      <div class="tip"><strong>Rule of thumb:</strong> Start with r=16, alpha=32. If results are poor, increase to r=32. If running out of VRAM, decrease to r=8.</div>
+
+      <h3>QLoRA — LoRA + Quantization</h3>
+      <p><strong>QLoRA</strong> goes one step further: it loads the frozen base model in 4-bit precision (quantized), reducing memory even more. This is what makes fine-tuning possible on free Colab.</p>
+
+      <pre>Full model (fp16):  ~16 GB VRAM
+Quantized (4-bit):   ~4 GB VRAM  ← fits on free Colab!
+LoRA adapters:      ~0.1 GB VRAM</pre>
+    `
+  },
+
+  'dataset-quality': {
+    title: 'Building Quality Datasets',
+    content: `
+      <h3>The Golden Rule</h3>
+      <div class="tip"><strong>100 perfect examples beat 10,000 noisy ones.</strong> Quality is EVERYTHING in fine-tuning.</div>
+
+      <h3>What Makes Good Training Data?</h3>
+      <ul>
+        <li><strong>Consistent format</strong> — every example follows the same structure</li>
+        <li><strong>Accurate responses</strong> — the assistant answers are exactly what you want</li>
+        <li><strong>Diverse inputs</strong> — cover different phrasings and edge cases</li>
+        <li><strong>Appropriate length</strong> — not too short (model learns to be brief) or too long (wastes tokens)</li>
+        <li><strong>No contradictions</strong> — don't teach the model conflicting things</li>
+      </ul>
+
+      <h3>How Many Examples Do I Need?</h3>
+      <table style="width:100%; border-collapse:collapse; margin:14px 0;">
+        <tr style="background:var(--green-light);"><th style="padding:10px; text-align:left;">Task</th><th style="padding:10px; text-align:left;">Minimum</th><th style="padding:10px; text-align:left;">Recommended</th></tr>
+        <tr style="border-bottom:1px solid var(--gray-200);"><td style="padding:10px;">Style/tone change</td><td style="padding:10px;">50</td><td style="padding:10px;">200-500</td></tr>
+        <tr style="border-bottom:1px solid var(--gray-200);"><td style="padding:10px;">Simple classification</td><td style="padding:10px;">100</td><td style="padding:10px;">500-1000</td></tr>
+        <tr style="border-bottom:1px solid var(--gray-200);"><td style="padding:10px;">Domain Q&A</td><td style="padding:10px;">200</td><td style="padding:10px;">1000-5000</td></tr>
+        <tr style="border-bottom:1px solid var(--gray-200);"><td style="padding:10px;">Complex reasoning</td><td style="padding:10px;">500</td><td style="padding:10px;">5000+</td></tr>
+      </table>
+
+      <h3>Common Mistakes</h3>
+      <ol>
+        <li><strong>Too few examples</strong> — model doesn't learn the pattern</li>
+        <li><strong>Noisy data</strong> — typos, wrong answers, inconsistent format</li>
+        <li><strong>Imbalanced topics</strong> — 90% on topic A, 10% on topic B = model ignores B</li>
+        <li><strong>Too similar examples</strong> — slight variations of the same thing = overfitting</li>
+        <li><strong>Missing system prompt</strong> — if you want a persona, include it in training</li>
+      </ol>
+
+      <h3>Data Cleaning Checklist</h3>
+      <ul>
+        <li>Remove empty or blank rows</li>
+        <li>Remove exact duplicates</li>
+        <li>Fix encoding issues (smart quotes, HTML entities)</li>
+        <li>Trim excess whitespace</li>
+        <li>Ensure consistent formatting</li>
+        <li>Verify responses are accurate</li>
+        <li>Check for PII (personal information) you don't want the model to learn</li>
+      </ul>
+
+      <div class="tip">Use the <strong>Upload & Clean</strong> tab in this app to automatically handle most of these cleaning steps!</div>
+    `
+  },
+
+  'choosing-model': {
+    title: 'Choosing the Right Model',
+    content: `
+      <h3>Size Matters</h3>
+      <p>Models come in different sizes measured in <strong>parameters (B = billions)</strong>. Bigger models are smarter but need more VRAM and time to train.</p>
+
+      <h3>Free Colab Compatibility</h3>
+      <table style="width:100%; border-collapse:collapse; margin:14px 0;">
+        <tr style="background:var(--green-light);"><th style="padding:10px;">Size</th><th style="padding:10px;">Colab Free?</th><th style="padding:10px;">Quality</th><th style="padding:10px;">Train Time</th></tr>
+        <tr style="border-bottom:1px solid var(--gray-200);"><td style="padding:10px;">1-2B</td><td style="padding:10px;">Easy</td><td style="padding:10px;">Basic</td><td style="padding:10px;">5-15 min</td></tr>
+        <tr style="border-bottom:1px solid var(--gray-200);"><td style="padding:10px;">3-4B</td><td style="padding:10px;">Comfortable</td><td style="padding:10px;">Good</td><td style="padding:10px;">15-30 min</td></tr>
+        <tr style="border-bottom:1px solid var(--gray-200);"><td style="padding:10px;">7-8B</td><td style="padding:10px;">Tight (4-bit only)</td><td style="padding:10px;">Very Good</td><td style="padding:10px;">30-60 min</td></tr>
+        <tr style="border-bottom:1px solid var(--gray-200);"><td style="padding:10px;">13B+</td><td style="padding:10px;">No</td><td style="padding:10px;">Excellent</td><td style="padding:10px;">Needs paid GPU</td></tr>
+      </table>
+
+      <h3>Recommended Models</h3>
+      <ul>
+        <li><strong>TinyLlama 1.1B</strong> — Best for learning. Trains fast, easy on VRAM.</li>
+        <li><strong>Gemma 2 2B</strong> — Google's small model. Great quality for its size.</li>
+        <li><strong>Phi 3.5 Mini (3.8B)</strong> — Microsoft's compact model. Excellent at reasoning and code.</li>
+        <li><strong>Llama 3.2 3B</strong> — Meta's latest small model. Strong all-rounder.</li>
+        <li><strong>Mistral 7B</strong> — Best quality at 7B. Needs 4-bit quantization on Colab.</li>
+        <li><strong>Llama 3.1 8B</strong> — Industry standard. Most tutorials use this.</li>
+      </ul>
+
+      <div class="tip"><strong>For learning:</strong> Start with TinyLlama or Gemma 2B. They train in minutes and you'll understand the full workflow before trying bigger models.</div>
+
+      <h3>License Considerations</h3>
+      <ul>
+        <li><strong>Apache 2.0</strong> (Mistral, Qwen) — fully open, use anywhere</li>
+        <li><strong>Llama License</strong> (Meta) — free but has usage restrictions for large deployments</li>
+        <li><strong>Gemma License</strong> (Google) — free with some restrictions</li>
+      </ul>
+    `
+  },
+
+  'training-params': {
+    title: 'Training Parameters Guide',
+    content: `
+      <h3>The Key Parameters</h3>
+
+      <h3>1. Epochs</h3>
+      <p>How many times the model sees your <strong>entire</strong> dataset during training.</p>
+      <ul>
+        <li><strong>1 epoch</strong> — quick test, might underfit</li>
+        <li><strong>3 epochs</strong> — standard, good starting point</li>
+        <li><strong>5-10 epochs</strong> — thorough, risk of overfitting with small datasets</li>
+      </ul>
+      <div class="warning"><strong>Overfitting alert:</strong> If your model starts memorizing training data instead of learning patterns, reduce epochs. Signs: training loss drops to near 0, but the model gives weird responses to new inputs.</div>
+
+      <h3>2. Learning Rate</h3>
+      <p>How big each update step is. Think of it as walking speed toward a destination.</p>
+      <ul>
+        <li><strong>1e-5</strong> — very conservative, slow but safe</li>
+        <li><strong>2e-4</strong> — standard for LoRA (Unsloth default)</li>
+        <li><strong>5e-4</strong> — aggressive, faster but can overshoot</li>
+      </ul>
+
+      <h3>3. Batch Size</h3>
+      <p>How many examples the model processes at once before updating weights.</p>
+      <ul>
+        <li><strong>1</strong> — minimum VRAM, noisy updates</li>
+        <li><strong>2</strong> — standard for free Colab</li>
+        <li><strong>4+</strong> — smoother training, needs more VRAM</li>
+      </ul>
+
+      <h3>4. LoRA Rank (r)</h3>
+      <p>Size of the trainable adapter matrices. Higher = more capacity to learn.</p>
+      <ul>
+        <li><strong>8</strong> — light, fast, good for simple tasks</li>
+        <li><strong>16</strong> — balanced, recommended default</li>
+        <li><strong>32</strong> — strong, for complex tasks</li>
+        <li><strong>64</strong> — heavy, maximum quality, most VRAM</li>
+      </ul>
+
+      <h3>5. Max Sequence Length</h3>
+      <p>Maximum number of tokens per training example. VRAM usage scales with this.</p>
+      <ul>
+        <li><strong>512</strong> — short Q&A pairs</li>
+        <li><strong>1024</strong> — standard conversations</li>
+        <li><strong>2048</strong> — long-form responses</li>
+      </ul>
+
+      <h3>Quick Reference</h3>
+      <pre>Safe defaults for free Colab:
+  LoRA r=16, alpha=32
+  Epochs: 3
+  Learning rate: 2e-4
+  Batch size: 2
+  Max length: 1024
+  Quantization: 4-bit
+  Optimizer: AdamW 8-bit</pre>
+
+      <div class="tip">When in doubt, use the defaults. They work well for 90% of cases. Only change parameters if you understand why.</div>
+    `
+  },
+
+  'evaluation': {
+    title: 'Evaluating Your Model',
+    content: `
+      <h3>How Do You Know It Worked?</h3>
+      <p>Fine-tuning can fail silently — the training loss drops, but the model isn't actually better. Here's how to properly evaluate.</p>
+
+      <h3>1. Training Loss</h3>
+      <p>The loss curve should decrease over time. But low loss alone doesn't mean success.</p>
+      <ul>
+        <li><strong>Good:</strong> Loss drops steadily, levels off around 0.5-1.0</li>
+        <li><strong>Bad:</strong> Loss drops to near 0 — probably overfitting</li>
+        <li><strong>Bad:</strong> Loss stays flat — model isn't learning (wrong config?)</li>
+        <li><strong>Bad:</strong> Loss spikes up — learning rate too high</li>
+      </ul>
+
+      <h3>2. Manual Testing</h3>
+      <p>The most reliable method: actually use the model and check outputs.</p>
+      <ul>
+        <li>Test with prompts from your training data — does it respond correctly?</li>
+        <li>Test with <strong>new</strong> prompts not in training — does it generalize?</li>
+        <li>Test edge cases — does it handle unusual inputs?</li>
+        <li>Compare with the base model — is it actually better?</li>
+      </ul>
+
+      <div class="tip">Use the <strong>Model Comparison</strong> tab to test base vs fine-tuned side by side!</div>
+
+      <h3>3. Common Problems</h3>
+      <table style="width:100%; border-collapse:collapse; margin:14px 0;">
+        <tr style="background:var(--green-light);"><th style="padding:10px; text-align:left;">Problem</th><th style="padding:10px; text-align:left;">Cause</th><th style="padding:10px; text-align:left;">Fix</th></tr>
+        <tr style="border-bottom:1px solid var(--gray-200);"><td style="padding:10px;">Repeats training data verbatim</td><td style="padding:10px;">Overfitting</td><td style="padding:10px;">Fewer epochs, more data, lower rank</td></tr>
+        <tr style="border-bottom:1px solid var(--gray-200);"><td style="padding:10px;">Worse than base model</td><td style="padding:10px;">Bad data or wrong config</td><td style="padding:10px;">Check data quality, try defaults</td></tr>
+        <tr style="border-bottom:1px solid var(--gray-200);"><td style="padding:10px;">Ignores system prompt</td><td style="padding:10px;">Not trained with system prompt</td><td style="padding:10px;">Include system prompt in training data</td></tr>
+        <tr style="border-bottom:1px solid var(--gray-200);"><td style="padding:10px;">Gibberish output</td><td style="padding:10px;">Learning rate too high</td><td style="padding:10px;">Lower learning rate (1e-5)</td></tr>
+      </table>
+    `
+  },
+
+  'quantization': {
+    title: 'Quantization & GGUF',
+    content: `
+      <h3>What is Quantization?</h3>
+      <p>Models store numbers in high precision (16-bit or 32-bit). <strong>Quantization</strong> reduces this precision to 8-bit or 4-bit, dramatically shrinking the model size and VRAM needs.</p>
+
+      <pre>Model: Llama 8B
+  Full precision (fp32): ~32 GB
+  Half precision (fp16): ~16 GB
+  8-bit quantized:        ~8 GB
+  4-bit quantized:        ~4 GB  ← fits on free Colab!</pre>
+
+      <h3>Quality vs Size Tradeoff</h3>
+      <ul>
+        <li><strong>4-bit (Q4_K_M)</strong> — ~50% size reduction, small quality loss. Best for Colab.</li>
+        <li><strong>8-bit</strong> — ~25% size reduction, minimal quality loss.</li>
+        <li><strong>Full precision</strong> — maximum quality, needs expensive hardware.</li>
+      </ul>
+
+      <div class="tip">For learning and most use cases, 4-bit quantization is perfectly fine. You won't notice the quality difference.</div>
+
+      <h3>GGUF Format</h3>
+      <p><strong>GGUF</strong> is a file format for quantized models. It's used by:</p>
+      <ul>
+        <li><strong>Ollama</strong> — run models locally with one command</li>
+        <li><strong>llama.cpp</strong> — C++ inference engine</li>
+        <li><strong>LM Studio</strong> — desktop app for running models</li>
+      </ul>
+
+      <h3>Using Your Model with Ollama</h3>
+      <pre>1. Export your model as GGUF (use Export tab)
+2. Install Ollama: curl -fsSL https://ollama.com/install.sh | sh
+3. Create a Modelfile:
+   FROM ./your-model.gguf
+4. Create the model:
+   ollama create my-model -f Modelfile
+5. Run it:
+   ollama run my-model</pre>
+    `
+  },
+
+  'deployment': {
+    title: 'Deploying Your Model',
+    content: `
+      <h3>Free Deployment Options</h3>
+
+      <h3>1. HuggingFace Spaces (Free)</h3>
+      <p>Host a Gradio or Streamlit app that serves your model. CPU-only on free tier (slow for large models).</p>
+      <pre>1. Push model to HuggingFace Hub
+2. Create a new Space
+3. Add a simple Gradio app
+4. Your model is live with a public URL!</pre>
+
+      <h3>2. Ollama (Local, Free)</h3>
+      <p>Run your model on your own computer. Best for personal use.</p>
+      <pre>ollama create my-model -f Modelfile
+ollama run my-model
+# Now accessible at localhost:11434</pre>
+
+      <h3>3. Google Colab (Free GPU)</h3>
+      <p>Use Colab as a temporary inference server. Not persistent but free.</p>
+
+      <h3>Paid Options (When You're Ready)</h3>
+      <ul>
+        <li><strong>HuggingFace Inference Endpoints</strong> — easiest, starts at ~$0.06/hr</li>
+        <li><strong>Modal</strong> — serverless GPU, pay per second</li>
+        <li><strong>Replicate</strong> — simple API deployment</li>
+        <li><strong>AWS/GCP/Azure</strong> — full control, most complex</li>
+      </ul>
+
+      <div class="tip"><strong>For learning:</strong> Start with Ollama locally or HuggingFace Spaces. Move to paid options only when you need production reliability.</div>
+
+      <h3>API Endpoint</h3>
+      <p>Once deployed, your model has an API endpoint you can call from any app:</p>
+      <pre>import requests
+
+response = requests.post(
+    "https://your-endpoint.com/generate",
+    json={
+        "prompt": "What is fine-tuning?",
+        "max_tokens": 256
+    }
+)
+print(response.json()["text"])</pre>
+    `
+  }
+};
+
+function openGuide(guideId) {
+  const guide = guides[guideId];
+  if (!guide) return;
+
+  document.getElementById('guide-grid').style.display = 'none';
+  const content = document.getElementById('guide-content');
+  content.style.display = 'block';
+  document.getElementById('guide-body').innerHTML = `<h2 style="margin-bottom:20px; color:var(--green-dark);">${guide.title}</h2>${guide.content}`;
+  content.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function closeGuide() {
+  document.getElementById('guide-grid').style.display = 'grid';
+  document.getElementById('guide-content').style.display = 'none';
+}
+</script>
+
+</body>
+</html>
